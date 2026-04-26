@@ -221,3 +221,13 @@ function buildShell() {
     <div class="main" id="board-main"></div>
   </div>`;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const app = document.getElementById("app");
+  if (app) {
+    STATE.role = "owner";
+    app.style.display = "flex";
+    if (window._boardId) buildNav(window._boardId);
+    startClock();
+  }
+});
