@@ -16,12 +16,12 @@ const CFG = {
 
 // ── Boards manifest ─────────────────────────────────────────
 const BOARDS = [
-  { id: "patient",  file: "boards/patient.html",  label: "Patient board",  icon: "person", roles: ["owner","reception"] },
-  { id: "revenue",  file: "boards/revenue.html",  label: "Revenue board",  icon: "chart",  roles: ["owner"] },
-  { id: "reports",  file: "boards/reports.html",  label: "Reports board",  icon: "doc",    roles: ["owner","reception","pathologist"] },
-  { id: "reagent",  file: "boards/reagent.html",  label: "Reagent board",  icon: "flask",  roles: ["owner"] },
-  { id: "doctors",  file: "boards/doctors.html",  label: "Doctor board",   icon: "steth",  roles: ["owner"] },
-  { id: "staff",    file: "boards/staff.html",    label: "Staff board",    icon: "table",  roles: ["owner"] },
+  { id: "patient",  file: "patient.html",  label: "Patient board",  icon: "person", roles: ["owner","reception"] },
+  { id: "revenue",  file: "revenue.html",  label: "Revenue board",  icon: "chart",  roles: ["owner"] },
+  { id: "reports",  file: "reports.html",  label: "Reports board",  icon: "doc",    roles: ["owner","reception","pathologist"] },
+  { id: "reagent",  file: "reagent.html",  label: "Reagent board",  icon: "flask",  roles: ["owner"] },
+  { id: "doctors",  file: "doctors.html",  label: "Doctor board",   icon: "steth",  roles: ["owner"] },
+  { id: "staff",    file: "staff.html",    label: "Staff board",    icon: "table",  roles: ["owner"] },
 ];
 
 const ICONS = {
