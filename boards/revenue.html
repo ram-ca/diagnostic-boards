@@ -287,8 +287,10 @@ function render(){
   // Store for filter updates
   window._rvData = { testRevenue, cash, upi, card, cashPct, upiPct, cardPct };
 
-  // Re-apply any active filters
+  // Re-apply active filters and restore select UI state after innerHTML rebuild
   if (_catFilter || _payFilter) renderFiltered();
+  if (_catFilter) { const e=document.getElementById("rv-cat"); if(e) e.value=_catFilter; }
+  if (_payFilter) { const e=document.getElementById("rv-pay"); if(e) e.value=_payFilter; }
 }
 
 function renderFiltered() {
@@ -353,6 +355,11 @@ function renderFiltered() {
       + `<div style="margin-top:8px;font-size:10px;color:var(--ink3)">
           ${_payFilter?"Filter active":"↑ Digital leads · healthy trend"}
         </div>`;
+
+    // Redraw payment doughnut to match the filter
+    doughnut("c-pay",["Cash","UPI","Card"],
+      [_payFilter==="digital"?0:d.cash, _payFilter==="cash"?0:d.upi, _payFilter==="cash"?0:d.card],
+      ["#0A5548","#C98420","#185FA5"]);
   }
 
   // Highlight active filter selects

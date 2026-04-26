@@ -151,7 +151,7 @@ function render(el) {
     </div>
   </div>`;
 
-  // Charts use full unfiltered data always
+  // Hourly chart uses full unfiltered data (time-series, not affected by filters)
   const hrs = ["7","8","9","10","11","12","13","14","15","16","17","18","19","20"];
   const hd  = [3,6,9,8,7,5,4,5,6,5,4,5,6,4];
   lineChart("c-hr", hrs, [
@@ -159,17 +159,15 @@ function render(el) {
     {label:"Yesterday", data:hd.map(v=>Math.max(0,v+R(-3,3))),borderColor:"#D3D1C7",borderDash:[3,3],pointRadius:0}
   ]);
 
-  const all = _allPts;
-  const hC  = all.filter(p=>p.source==="Home").length;
-  const wk  = all.filter(p=>p.source==="Walk-in").length;
-  const rf  = all.filter(p=>p.source==="Referral").length;
-  doughnut("c-src",["Referral","Walk-in","Home"],[rf,wk,hC],["#0A5548","#185FA5","#C98420"],{legend:{display:false}});
-
   // Store shared context for renderDynamic
   window._tatPct = tatPct;
   window._yst    = yst;
 
   renderDynamic(getFiltered());
+
+  // Restore filter input values after innerHTML rebuild (preserves UI state on 45s refresh)
+  [["pts-s",_filt.s],["pts-st",_filt.st],["pts-d",_filt.d],["pts-src",_filt.src],["pts-pay",_filt.pay]]
+    .forEach(([id,val]) => { if (val) { const e=document.getElementById(id); if(e) e.value=val; } });
 }
 
 function renderDynamic(pts) {
@@ -311,7 +309,7 @@ function renderDynamic(pts) {
       Top: ${docStats[0]?.name||"—"} · ${docStats[0]?.count||0} patients · ${f(docStats[0]?.rev||0)}
     </div>`;
 
-  // Source bars (chart canvas stays, bars update)
+  // Source bars + redraw doughnut — both update with every filter change
   document.getElementById("p-srcbars").innerHTML = [
     {l:"Referral",v:referred,c:"var(--teal)"},
     {l:"Walk-in", v:walkin,  c:"var(--blue)"},
@@ -321,6 +319,7 @@ function renderDynamic(pts) {
       <div class="pbl-top"><span>${x.l}</span><span style="font-weight:500;color:${x.c}">${x.v} <span style="font-weight:400;color:var(--ink3)">(${total>0?Math.round(x.v/total*100):0}%)</span></span></div>
       <div class="prog"><div class="progf" style="width:${total>0?Math.round(x.v/total*100):0}%;background:${x.c}"></div></div>
     </div>`).join("");
+  doughnut("c-src",["Referral","Walk-in","Home"],[referred,walkin,homeC],["#0A5548","#185FA5","#C98420"],{legend:{display:false}});
 
   // Table
   document.getElementById("pt-cnt").textContent = `${total} patient${total!==1?"s":""}`;
