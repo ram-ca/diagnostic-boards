@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Env / secrets — NEVER commit these
+.env
+.env.local
+.env.production
+supabase.json
+
+# Node (if you install anything later)
+node_modules/
+npm-debug.log
+
+# Build output
+dist/
+build/

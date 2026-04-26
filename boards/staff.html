@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sharada — Staff Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Outfit:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+<style>
+.lcard{background:var(--white);border:0.5px solid var(--brd);border-radius:16px;padding:36px;width:340px;text-align:center;}
+.lnm{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:400;color:var(--teal);letter-spacing:.06em;margin-bottom:3px;}
+.lsb{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);}
+.lro{display:flex;gap:5px;margin:18px 0 12px;justify-content:center;}
+.rb{font-size:11px;padding:5px 12px;border-radius:18px;border:0.5px solid var(--brd);cursor:pointer;background:transparent;color:var(--ink3);font-family:'Outfit',sans-serif;}
+.rb.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+.lpd{display:flex;gap:7px;justify-content:center;margin:12px 0 16px;}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--cream);border:1.5px solid var(--brd);transition:all .15s;}
+.dot.f{background:var(--teal);border-color:var(--teal);}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
+.pk{background:var(--cream);border:0.5px solid var(--brd);border-radius:9px;padding:12px;font-size:18px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .1s;color:var(--ink);}
+.pk:hover{background:var(--tl);border-color:var(--teal);}.pk:active{transform:scale(.96);}
+.lerr{font-size:12px;color:var(--red);height:18px;margin-bottom:4px;}
+.lhint{font-size:10px;color:var(--ink3);}
+#app{display:none;flex:1;flex-direction:row;overflow:hidden;width:100%;}
+.atd{width:9px;height:9px;border-radius:50%;}
+.atd.present{background:#1D9E75;}.atd.leave{background:#EF9F27;}.atd.absent{background:#E24B4A;}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="../shared/shared.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <aside class="sb">
+    <div class="sbb"><div class="sbn"><span class="ld"></span>Sharada</div><div class="sbs">Staff Board</div></div>
+    <nav class="sbv" id="snav"></nav>
+    <div class="sbm"><div class="mc">● Demo data</div></div>
+    <div class="sbf" id="clk">--:--:--</div>
+  </aside>
+  <div class="main" id="bm"></div>
+</div>
+<script>
+window._boardId="staff";
+const STAFF=[
+  {name:"Receptionist",init:"RC",c:"#E6F1FB",tc:"#185FA5",role:"Front desk",st:"present",ci:"6:58 AM",att:96,sal:14000},
+  {name:"Lab Technician",init:"LT",c:"#EAF3DE",tc:"#3B6D11",role:"Laboratory",st:"present",ci:"6:44 AM",att:100,sal:20000},
+  {name:"Pathologist",init:"PT",c:"#FAEEDA",tc:"#854F0B",role:"Approval",st:"present",ci:"9:08 AM",att:92,sal:42000},
+  {name:"Sonographer",init:"US",c:"#DCF0E8",tc:"#085041",role:"Radiology",st:"present",ci:"9:52 AM",att:88,sal:24000},
+  {name:"Phlebotomist",init:"PH",c:"#F1EFE8",tc:"#5F5E5A",role:"Home coll.",st:"leave",ci:"On leave",att:84,sal:16000},
+  {name:"Asst Technician",init:"AT",c:"#EAF3DE",tc:"#3B6D11",role:"Laboratory",st:"present",ci:"7:01 AM",att:95,sal:15000},
+];
+document.addEventListener("DOMContentLoaded",()=>{
+  initBoard();
+});
+function initBoard(){ render(); setInterval(render,60000); }
+
+function render(){
+  const el=document.getElementById("bm");
+  const staff=STAFF.map(s=>({...s,tasks:s.st==="present"?R(10,55):0,score:s.st==="present"?R(78,99):0}));
+  const present=staff.filter(s=>s.st==="present").length;
+  const samples=R(32,62),pending=R(2,8);
+  const totalSal=staff.reduce((a,s)=>a+s.sal,0);
+  const avgAtt=Math.round(staff.reduce((a,s)=>a+s.att,0)/staff.length);
+
+  el.innerHTML=`
+  <div class="bh">
+    <div><div class="bht">Staff board</div><div class="bhs">Attendance, workload and performance — ${new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})}</div></div>
+    <div class="bhr"><span class="htm" id="htime"></span></div>
+  </div>
+  <div class="fb">
+    <select id="sf" onchange="sff()"><option value="">All attendance</option><option value="present">Present</option><option value="leave">On leave</option><option value="absent">Absent</option></select>
+    <div class="fsp"></div><input type="date" value="${today()}">
+  </div>
+  <div class="cband">
+    <span><strong>${present}</strong> of ${staff.length} present</span><span class="ctx-sep">·</span>
+    <span><strong>${samples}</strong> samples processed</span><span class="ctx-sep">·</span>
+    <span><strong>${pending}</strong> reports pending</span><span class="ctx-sep">·</span>
+    <span>Monthly salary <strong>${fK(totalSal)}</strong> · Avg attendance <strong>${avgAtt}%</strong></span>
+  </div>
+  <div class="bb">
+    <div class="krow k3" style="margin-bottom:12px">
+      ${kpi("Present today",present,"of "+staff.length+" staff members","ok",present===staff.length?"✓ Full team":"→ "+(staff.length-present)+" absent/leave","gn",{color:"var(--grn)"})}
+      ${kpi("Samples processed",samples,"by lab team today","up","↑ "+R(3,12)+" vs yesterday","tl")}
+      ${kpi("Reports pending",pending,"in pathologist queue","wn",pending>5?"→ Action needed":"→ On track","am",{color:pending>5?"var(--red)":"var(--amb)"})}
+    </div>
+    <div class="krow k3" style="margin-bottom:16px">
+      ${kpi("Monthly salary",fK(totalSal),"total fixed payroll","fl","→ "+Math.round(totalSal/236000*100)+"% of fixed costs","")}
+      ${kpi("Avg attendance",avgAtt+"%","team average this month","ok","✓ Target >90%","gn",{color:avgAtt>=90?"var(--grn)":"var(--amb)",prog:avgAtt})}
+      ${kpi("On leave today",staff.filter(s=>s.st==="leave").length,"approved leave","fl","→ covered","",{})}
+    </div>
+    <div class="panel" style="margin-bottom:12px">
+      <div class="ptl">Today's team status</div>
+      <div class="th"><span style="width:34px"></span><span style="flex:1">Staff</span><span style="width:75px;text-align:center">Status</span><span style="width:80px;text-align:center">Clock in</span><span style="width:65px;text-align:center">Tasks</span><span style="width:80px;text-align:right">Attendance</span><span style="width:75px;text-align:right">Score</span><span style="width:70px;text-align:right">Salary</span></div>
+      <div id="s-rows">
+        ${staff.map(s=>`<div class="tr" data-s="${s.st}"><span style="width:34px"><span class="av" style="background:${s.c};color:${s.tc};width:26px;height:26px;font-size:10px">${s.init}</span></span><span style="flex:1"><strong>${s.name}</strong> <span style="font-size:10px;color:var(--ink3)">${s.role}</span></span><span style="width:75px;text-align:center"><span class="atd ${s.st}" style="margin:0 auto;display:block;width:9px"></span></span><span style="width:80px;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)">${s.ci}</span><span style="width:65px;text-align:center">${s.tasks}</span><span style="width:80px;text-align:right"><span class="pill ${s.att>=95?"pd":s.att>=85?"pu-pill":"pc"}">${s.att}%</span></span><span style="width:75px;text-align:right"><span class="pill ${s.score>=90?"pd":s.score>=80?"pu-pill":"pc"}">${s.score||"N/A"}</span></span><span style="width:70px;text-align:right;font-family:'DM Mono',monospace;font-size:11px">${f(s.sal)}</span></div>`).join("")}
+      </div>
+      <div style="padding:10px 0;border-top:1px solid var(--brd);display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--ink3)">Total monthly payroll</span><span style="font-family:'DM Mono',monospace;font-weight:500">${f(totalSal)}</span></div>
+    </div>
+    <div class="g3">
+      <div class="panel"><div class="ptl">Hourly workload <span class="ptag">samples</span></div><div class="cw"><canvas id="c-w"></canvas></div></div>
+      <div class="panel"><div class="ptl">Monthly attendance % <span class="ptag">by person</span></div><div class="cw"><canvas id="c-a"></canvas></div></div>
+      <div class="panel">
+        <div class="ptl">Performance scores</div>
+        ${staff.map(s=>`<div class="pbl"><div class="pbl-top"><span>${s.name.split(" ")[0]}</span><span style="color:${s.score>=90?"var(--grn)":s.score>=80?"var(--teal)":"var(--amb)"}">${s.score||"–"}/100</span></div><div class="prog"><div class="progf" style="width:${s.score||0}%;background:${s.score>=90?"#1D9E75":s.score>=80?"var(--teal2)":"var(--g2)"}"></div></div></div>`).join("")}
+      </div>
+    </div>
+  </div>`;
+
+  barChart("c-w",["7h","8","9","10","11","12","1","2","3","4","5","6","7","8"],[5,12,9,7,5,4,3,5,4,3,4,6,7,4]);
+  mkChart("c-a","bar",{labels:staff.map(s=>s.init),datasets:[{data:staff.map(s=>s.att),backgroundColor:staff.map(s=>s.att>=95?"rgba(10,85,72,.7)":s.att>=85?"rgba(201,132,32,.7)":"rgba(162,45,45,.7)"),borderRadius:4}]},{yFmt:v=>v+"%",yMin:70,yMax:105});
+}
+function sff(){
+  const v=document.getElementById("sf")?.value||"";
+  document.querySelectorAll("#s-rows .tr").forEach(r=>{r.style.display=(!v||r.dataset.s===v)?"":"none";});
+}
+</script>
+</body>
+</html>

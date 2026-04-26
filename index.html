@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sharada Diagnostics — Boards Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Outfit:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--teal:#0A5548;--teal2:#136658;--tl:#DCF0E8;--gold:#C98420;--cream:#F9F7F2;--white:#FFFFFF;--ink:#1A150A;--ink3:#7A7464;--brd:#E8E0CC;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--cream);font-family:'Outfit',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;}
+header{background:var(--ink);padding:24px 48px;display:flex;align-items:center;justify-content:space-between;}
+.h-logo{display:flex;align-items:center;gap:14px;}
+.h-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:#fff;letter-spacing:.08em;}
+.h-sub{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:2px;}
+.h-right{font-family:'DM Mono',monospace;font-size:11px;color:rgba(255,255,255,.25);}
+main{flex:1;padding:48px;}
+.intro{text-align:center;margin-bottom:48px;}
+.intro h1{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:300;color:var(--teal);letter-spacing:.04em;margin-bottom:8px;}
+.intro p{font-size:14px;color:var(--ink3);max-width:500px;margin:0 auto;line-height:1.7;}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin:0 auto;}
+@media(max-width:640px){.grid{grid-template-columns:1fr 1fr;}}
+.card{background:var(--white);border:0.5px solid var(--brd);border-radius:12px;padding:24px;text-decoration:none;color:var(--ink);transition:all .15s;display:flex;flex-direction:column;gap:12px;}
+.card:hover{border-color:var(--teal2);box-shadow:0 4px 20px rgba(10,85,72,.1);transform:translateY(-2px);}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+.card-title{font-size:15px;font-weight:500;}
+.card-desc{font-size:12px;color:var(--ink3);line-height:1.6;}
+.card-roles{font-size:10px;font-family:'DM Mono',monospace;color:var(--ink3);margin-top:4px;}
+.card-arrow{margin-top:auto;font-size:12px;color:var(--teal);font-weight:500;}
+.badge{font-size:9px;font-weight:500;padding:2px 7px;border-radius:8px;background:var(--tl);color:var(--teal);margin-left:8px;}
+footer{padding:24px 48px;border-top:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;}
+.f-note{font-size:11px;color:var(--ink3);}
+.f-mode{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);background:var(--cream);border:0.5px solid var(--brd);border-radius:4px;padding:3px 8px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="h-logo">
+    <svg width="36" height="36" viewBox="0 0 72 72" fill="none">
+      <g opacity=".15"><path d="M36,8 C40,16 40,26 36,28 C32,26 32,16 36,8" fill="#C98420"/><path d="M36,8 C40,16 40,26 36,28 C32,26 32,16 36,8" fill="#C98420" transform="rotate(90 36 36)"/><path d="M36,8 C40,16 40,26 36,28 C32,26 32,16 36,8" fill="#C98420" transform="rotate(180 36 36)"/><path d="M36,8 C40,16 40,26 36,28 C32,26 32,16 36,8" fill="#C98420" transform="rotate(270 36 36)"/></g>
+      <circle cx="36" cy="36" r="33" stroke="rgba(255,255,255,.25)" stroke-width=".7" fill="none"/>
+      <path d="M 44,24 A 8,8 0 0,0 28,24 C 28,36 44,36 44,48 A 8,8 0 0,1 28,48" stroke="white" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+      <circle cx="44" cy="24" r="2.6" fill="#C98420"/><circle cx="28" cy="48" r="2.6" fill="#C98420"/>
+    </svg>
+    <div><div class="h-name">Sharada Diagnostics</div><div class="h-sub">Operations Boards</div></div>
+  </div>
+  <div class="h-right" id="clk"></div>
+</header>
+
+<main>
+  <div class="intro">
+    <h1>Operations Boards</h1>
+    <p>Six independent boards — each focused on one area of your business. Open any board directly. Your role determines which boards you can access.</p>
+  </div>
+  <div class="grid">
+    <a class="card" href="patient.html">
+      <div class="card-icon" style="background:#DCF0E8">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#0A5548" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#0A5548" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div><div class="card-title">Patient board</div><span class="badge">Live queue</span></div>
+      <div class="card-desc">Real-time patient pipeline. Status columns from registered to delivered. Hourly flow, test breakdown, source analysis, full searchable table.</div>
+      <div class="card-roles">Access: Owner · Reception</div>
+      <div class="card-arrow">Open board →</div>
+    </a>
+    <a class="card" href="revenue.html">
+      <div class="card-icon" style="background:#DCF0E8">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M2 12l3-4 3 2 3-5 3 2" stroke="#0A5548" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div><div class="card-title">Revenue board</div><span class="badge">Today / Week / Month</span></div>
+      <div class="card-desc">P&L, monthly target tracker, payment mode split, top tests by revenue, cost breakdown. Toggle between today, week and month.</div>
+      <div class="card-roles">Access: Owner only</div>
+      <div class="card-arrow">Open board →</div>
+    </a>
+    <a class="card" href="reports.html">
+      <div class="card-icon" style="background:#FAEEDA">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="10" height="13" rx="1.5" stroke="#BA7517" stroke-width="1.3"/><path d="M5 5h6M5 8h6M5 11h3" stroke="#BA7517" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div><div class="card-title">Reports board</div><span class="badge">Pathologist queue</span></div>
+      <div class="card-desc">Turnaround time tracking, pathologist approval queue, abnormal value alerts, TAT trend by day and by test type.</div>
+      <div class="card-roles">Access: Owner · Reception · Pathologist</div>
+      <div class="card-arrow">Open board →</div>
+    </a>
+    <a class="card" href="reagent.html">
+      <div class="card-icon" style="background:#FCEBEB">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M6 1v5L2 13a1 1 0 00.9 1.5h10.2A1 1 0 0014 13L10 6V1" stroke="#A32D2D" stroke-width="1.3" stroke-linecap="round"/><path d="M5.5 1h5" stroke="#A32D2D" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div><div class="card-title">Reagent board</div><span class="badge">Stock alerts</span></div>
+      <div class="card-desc">All 12 reagents tracked with days remaining, daily usage, reorder alerts with supplier contacts, 8-week consumption trend.</div>
+      <div class="card-roles">Access: Owner only</div>
+      <div class="card-arrow">Open board →</div>
+    </a>
+    <a class="card" href="doctors.html">
+      <div class="card-icon" style="background:#E6F1FB">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="#185FA5" stroke-width="1.3"/><path d="M1 14c0-2.8 2.2-5 5-5" stroke="#185FA5" stroke-width="1.3" stroke-linecap="round"/><path d="M11 9v6M8 12h6" stroke="#185FA5" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div><div class="card-title">Doctor board</div><span class="badge">Referral tracking</span></div>
+      <div class="card-desc">Referral leaderboard with trend arrows and vs-previous delta. Visit priority alerts. 8-week trend chart and weekly per-doctor breakdown.</div>
+      <div class="card-roles">Access: Owner only</div>
+      <div class="card-arrow">Open board →</div>
+    </a>
+    <a class="card" href="staff.html">
+      <div class="card-icon" style="background:#EAF3DE">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="#3B6D11" stroke-width="1.3"/><path d="M1 6h14M6 6v9" stroke="#3B6D11" stroke-width="1.3"/></svg>
+      </div>
+      <div><div class="card-title">Staff board</div><span class="badge">Attendance + payroll</span></div>
+      <div class="card-desc">Daily attendance, clock-in times, task counts, monthly attendance %, performance scores, hourly workload and full payroll view.</div>
+      <div class="card-roles">Access: Owner only</div>
+      <div class="card-arrow">Open board →</div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  <div class="f-note">Sharada Diagnostics · Kondapur, Hyderabad · sharadadiagnostics.in</div>
+  <div class="f-mode">● Demo data — connect Supabase for live data</div>
+</footer>
+
+<script>
+setInterval(()=>{
+  const t=new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  document.getElementById("clk").textContent=t;
+},1000);
+</script>
+</body>
+</html>

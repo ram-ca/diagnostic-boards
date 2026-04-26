@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sharada — Patient Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Outfit:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/shared.css">
+<style>
+.lcard{background:var(--white);border:0.5px solid var(--brd);border-radius:16px;padding:36px;width:340px;text-align:center;}
+.lnm{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:400;color:var(--teal);letter-spacing:.06em;margin-bottom:3px;}
+.lsb{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);}
+.lro{display:flex;gap:5px;margin:18px 0 12px;justify-content:center;}
+.rb{font-size:11px;padding:5px 12px;border-radius:18px;border:0.5px solid var(--brd);cursor:pointer;background:transparent;color:var(--ink3);font-family:'Outfit',sans-serif;}
+.rb.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+.lpd{display:flex;gap:7px;justify-content:center;margin:12px 0 16px;}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--cream);border:1.5px solid var(--brd);transition:all .15s;}
+.dot.f{background:var(--teal);border-color:var(--teal);}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
+.pk{background:var(--cream);border:0.5px solid var(--brd);border-radius:9px;padding:12px;font-size:18px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .1s;color:var(--ink);}
+.pk:hover{background:var(--tl);border-color:var(--teal);}.pk:active{transform:scale(.96);}
+.lerr{font-size:12px;color:var(--red);height:18px;margin-bottom:4px;}
+.lhint{font-size:10px;color:var(--ink3);}
+#app{display:none;flex:1;flex-direction:row;overflow:hidden;width:100%;}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="../shared/shared.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <aside class="sb">
+    <div class="sbb"><div class="sbn"><span class="ld"></span>Sharada</div><div class="sbs">Patient Board</div></div>
+    <nav class="sbv" id="snav"></nav>
+    <div class="sbm"><div class="mc">● Demo data</div></div>
+    <div class="sbf" id="clk">--:--:--</div>
+  </aside>
+  <div class="main" id="bm"></div>
+</div>
+<script>
+window._boardId="patient";
+document.addEventListener("DOMContentLoaded",()=>{
+  initBoard();
+});
+function initBoard(){ render(document.getElementById("bm")); setInterval(()=>render(document.getElementById("bm")),45000); }
+
+function render(el){
+  const total=R(38,62), yst=R(30,55), dp=pct(total,yst);
+  const homeC=R(6,14), walkin=R(8,16), referred=total-homeC-walkin;
+  const avgTk=R(420,620), todayRev=total*avgTk, tatPct=R(78,96);
+  const statuses=["registered","collected","in_lab","approved","delivered"];
+  const pts=Array.from({length:total},(_,i)=>{
+    const s=statuses[Math.min(Math.floor(i/total*6),4)];
+    const t1=TESTS[R(0,TESTS.length-1)],t2=R(0,1)?TESTS[R(0,TESTS.length-1)]:null;
+    return{id:`SD-${R(10000,99999)}`,name:NAMES[i%NAMES.length],age:R(18,76),gender:R(0,1)?"M":"F",
+      tests:t2?[t1,t2]:[t1],status:s,time:`${R(7,19)}:${String(R(0,59)).padStart(2,"0")}`,
+      doctor:DOCS[R(0,DOCS.length-1)],pay:R(0,1)?"UPI":"Cash",amount:R(250,1800),
+      source:R(0,2)===0?"Home":R(0,1)?"Walk-in":"Referral",abn:R(0,5)===0};
+  });
+  const byS=s=>pts.filter(p=>p.status===s);
+  const chips=list=>list.slice(0,4).map(p=>`<div class="pchip"><div class="pcn">${p.name}<span style="font-size:9px;color:var(--ink3)">${p.time}</span></div><div class="pct">${p.tests[0]}${p.abn?' <span class="pill pc">!</span>':""} · ${p.source}</div></div>`).join("")+(list.length>4?`<div class="morec">+${list.length-4} more</div>`:"");
+  const hdrs=[{k:"registered",l:"Registered",c:"s-reg"},{k:"collected",l:"Sample",c:"s-col"},{k:"in_lab",l:"In lab",c:"s-lab"},{k:"approved",l:"Approved",c:"s-app"},{k:"delivered",l:"Delivered",c:"s-del"}];
+
+  el.innerHTML=`
+  <div class="bh">
+    <div><div class="bht">Patient board</div><div class="bhs">Live queue — ${new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})}</div></div>
+    <div class="bhr"><span class="hbg hbd">Demo</span><span class="htm" id="htime"></span></div>
+  </div>
+  <div class="fb">
+    <input type="text" placeholder="Search name or ID..." id="pts-s" oninput="ptf()">
+    <select id="pts-st" onchange="ptf()"><option value="">All statuses</option>${statuses.map(s=>`<option value="${s}">${s.replace("_"," ")}</option>`).join("")}</select>
+    <select id="pts-d" onchange="ptf()"><option value="">All doctors</option>${DOCS.map(d=>`<option value="${d}">${d}</option>`).join("")}</select>
+    <select id="pts-src" onchange="ptf()"><option value="">All sources</option><option>Walk-in</option><option>Referral</option><option>Home</option></select>
+    <select id="pts-pay" onchange="ptf()"><option value="">All payments</option><option>UPI</option><option>Cash</option></select>
+    <div class="fsp"></div><input type="date" value="${today()}" id="pts-dt">
+  </div>
+  <div class="cband">
+    <span><strong>${total}</strong> patients today</span><span class="ctx-sep">·</span>
+    <span>${dp>0?"↑":"↓"}<strong>${Math.abs(dp)}%</strong> vs yesterday (${yst})</span><span class="ctx-sep">·</span>
+    <span>Est. revenue <strong>${fK(todayRev)}</strong></span><span class="ctx-sep">·</span>
+    <span><strong>${byS("delivered").length}</strong> delivered · <strong>${byS("registered").length+byS("collected").length+byS("in_lab").length}</strong> in queue</span>
+  </div>
+  <div class="bb">
+    <div class="krow k4" style="margin-bottom:12px">
+      ${kpi("Total today",total,"patients registered",dp>0?"up":"dn",`${dp>0?"↑":"↓"}${Math.abs(dp)}% vs yesterday`,"tl",{color:"var(--teal)"})}
+      ${kpi("In queue",byS("registered").length+byS("collected").length+byS("in_lab").length,"awaiting report","fl","→ processing","bl")}
+      ${kpi("Delivered",byS("delivered").length,"reports sent","up","↑ "+R(2,6)+" vs yesterday","gn",{color:"var(--grn)"})}
+      ${kpi("Today revenue",fK(todayRev),"avg ticket "+f(avgTk),"up","+"+R(5,18)+"% vs yesterday","tl",{color:"var(--teal)"})}
+    </div>
+    <div class="krow k4" style="margin-bottom:16px">
+      ${kpi("Home collection",homeC,"patients visited at home","up","↑ growing","bl")}
+      ${kpi("Walk-ins",walkin,"no appointment","fl","→ stable","")}
+      ${kpi("TAT compliance",tatPct+"%","reports within 4 hours","ok",tatPct>=90?"✓ Excellent":"→ Improving","gn",{color:tatPct>=90?"var(--grn)":"var(--amb)",prog:tatPct,progColor:tatPct>=90?"#1D9E75":"#EF9F27"})}
+      ${kpi("Abnormal flags",pts.filter(p=>p.abn).length,"outside reference range","wn","→ Doctor alerted","rd",{color:"var(--red)"})}
+    </div>
+    <div class="sl">Patient pipeline</div>
+    <div class="scols">${hdrs.map(h=>`<div class="scol"><div class="shdr ${h.c}"><span>${h.l}</span><span class="scnt">${byS(h.k).length}</span></div><div class="scards">${chips(byS(h.k))}</div></div>`).join("")}</div>
+    <div class="g3" style="margin-bottom:12px">
+      <div class="panel"><div class="ptl">Hourly flow <span class="ptag">today vs yesterday</span></div><div class="cw"><canvas id="c-hr"></canvas></div></div>
+      <div class="panel"><div class="ptl">Test breakdown <span class="ptag">by count today</span></div><div class="cw"><canvas id="c-tst"></canvas></div></div>
+      <div class="panel">
+        <div class="ptl">Patient source <span class="ptag">today</span></div>
+        <div class="cw s"><canvas id="c-src"></canvas></div>
+        <div style="margin-top:10px">
+          ${[{l:"Referral",v:referred,c:"var(--teal)"},{l:"Walk-in",v:walkin,c:"var(--blue)"},{l:"Home coll.",v:homeC,c:"var(--g2)"}].map(x=>`
+          <div class="pbl"><div class="pbl-top"><span>${x.l}</span><span style="font-weight:500;color:${x.c}">${x.v} <span style="color:var(--ink3);font-weight:400">(${Math.round(x.v/total*100)}%)</span></span></div>
+          <div class="prog"><div class="progf" style="width:${Math.round(x.v/total*100)}%;background:${x.c}"></div></div></div>`).join("")}
+        </div>
+      </div>
+    </div>
+    ${pts.filter(p=>p.abn).length>0?`
+    <div class="sl">Critical value alerts</div>
+    <div style="margin-bottom:14px">${pts.filter(p=>p.abn).slice(0,3).map(p=>`<div class="ac acr"><div class="ado"></div><div><div class="att">Abnormal — ${p.name} · ${p.age}y ${p.gender} · ${p.tests[0]}</div><div class="abt">Referred by ${p.doctor} · WhatsApp alert sent to doctor</div></div></div>`).join("")}</div>`:""}
+    <div class="panel">
+      <div class="ptl">All patients today <span class="ptag" id="pt-cnt">${total} patients</span></div>
+      <div class="th"><span style="width:90px">ID</span><span style="flex:1">Patient</span><span style="width:80px">Tests</span><span style="width:110px">Doctor</span><span style="width:65px">Source</span><span style="width:60px;text-align:right">Amount</span><span style="width:45px;text-align:right">Pay</span><span style="width:75px;text-align:right">Status</span></div>
+      <div id="pt-rows">${pts.map(p=>`<div class="tr" data-n="${p.name.toLowerCase()}" data-s="${p.status}" data-d="${p.doctor}" data-src="${p.source}" data-pay="${p.pay}"><span style="width:90px;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)">${p.id}</span><span style="flex:1"><strong>${p.name}</strong> <span style="font-size:10px;color:var(--ink3)">·${p.age}y ${p.gender}</span>${p.abn?' <span class="pill pc">!</span>':""}</span><span style="width:80px;font-size:10px;color:var(--ink3);overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${p.tests[0]}</span><span style="width:110px;font-size:10px;color:var(--ink3)">${p.doctor}</span><span style="width:65px"><span class="pill ${p.source==="Home"?"pu-pill":p.source==="Walk-in"?"pp":"pa"}">${p.source}</span></span><span style="width:60px;text-align:right;font-family:'DM Mono',monospace;font-size:11px">${f(p.amount)}</span><span style="width:45px;text-align:right"><span class="pill ${p.pay==="UPI"?"pa":"pp"}">${p.pay}</span></span><span style="width:75px;text-align:right"><span class="pill ${p.status==="delivered"?"pd":p.status==="approved"?"pa":"pp"}">${p.status.replace("_"," ")}</span></span></div>`).join("")}</div>
+    </div>
+  </div>`;
+
+  const hrs=["7h","8","9","10","11","12","1","2","3","4","5","6","7","8"];
+  const hd=[8,12,9,6,5,4,3,5,4,3,4,6,7,5];
+  lineChart("c-hr",hrs,[{label:"Today",data:hd,borderColor:"#0A5548",backgroundColor:"rgba(10,85,72,.1)",fill:true},{label:"Yesterday",data:hd.map(v=>v+R(-3,3)),borderColor:"#D3D1C7",borderDash:[3,3],pointRadius:0}]);
+  doughnut("c-tst",TESTS.slice(0,7),[18,14,10,8,7,6,5],["#0A5548","#136658","#C98420","#3B6D11","#185FA5","#534AB7","#D3D1C7"]);
+  doughnut("c-src",["Walk-in","Referral","Home"],[walkin,referred,homeC],["#185FA5","#0A5548","#C98420"],{legend:{display:false}});
+  window._pts=pts;
+}
+
+function ptf(){
+  const s=(document.getElementById("pts-s")?.value||"").toLowerCase();
+  const st=document.getElementById("pts-st")?.value||"";
+  const d=document.getElementById("pts-d")?.value||"";
+  const src=document.getElementById("pts-src")?.value||"";
+  const pay=document.getElementById("pts-pay")?.value||"";
+  let n=0;
+  document.querySelectorAll("#pt-rows .tr").forEach(r=>{
+    const ok=(!s||(r.dataset.n||"").includes(s))&&(!st||r.dataset.s===st)&&(!d||r.dataset.d===d)&&(!src||r.dataset.src===src)&&(!pay||r.dataset.pay===pay);
+    r.style.display=ok?"":"none"; if(ok)n++;
+  });
+  const l=document.getElementById("pt-cnt"); if(l)l.textContent=n+" patients";
+}
+</script>
+</body>
+</html>
