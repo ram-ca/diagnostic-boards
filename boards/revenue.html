@@ -6,27 +6,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Outfit:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/shared.css">
 <style>
-.lcard{background:var(--white);border:0.5px solid var(--brd);border-radius:16px;padding:36px;width:340px;text-align:center;}
-.lnm{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:400;color:var(--teal);letter-spacing:.06em;margin-bottom:3px;}
-.lsb{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);}
-.lro{display:flex;gap:5px;margin:18px 0 12px;justify-content:center;}
-.rb{font-size:11px;padding:5px 12px;border-radius:18px;border:0.5px solid var(--brd);cursor:pointer;background:transparent;color:var(--ink3);font-family:'Outfit',sans-serif;}
-.rb.on{background:var(--teal);color:#fff;border-color:var(--teal);}
-.lpd{display:flex;gap:7px;justify-content:center;margin:12px 0 16px;}
-.dot{width:12px;height:12px;border-radius:50%;background:var(--cream);border:1.5px solid var(--brd);transition:all .15s;}
-.dot.f{background:var(--teal);border-color:var(--teal);}
-.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
-.pk{background:var(--cream);border:0.5px solid var(--brd);border-radius:9px;padding:12px;font-size:18px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .1s;color:var(--ink);}
-.pk:hover{background:var(--tl);border-color:var(--teal);}.pk:active{transform:scale(.96);}
-.lerr{font-size:12px;color:var(--red);height:18px;margin-bottom:4px;}
-.lhint{font-size:10px;color:var(--ink3);}
 #app{display:none;flex:1;flex-direction:row;overflow:hidden;width:100%;}
+.doc-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--brd);}
+.doc-row:last-child{border-bottom:none;}
+.doc-bar-wrap{flex:1;background:var(--cream);border-radius:3px;height:5px;overflow:hidden;}
+.doc-bar{height:100%;border-radius:3px;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="../shared/shared.js"></script>
 </head>
 <body>
-
 <div id="app">
   <aside class="sb">
     <div class="sbb"><div class="sbn"><span class="ld"></span>Sharada</div><div class="sbs">Revenue Board</div></div>
@@ -38,123 +27,339 @@
 </div>
 <script>
 window._boardId="revenue";
-let _p="today";
-document.addEventListener("DOMContentLoaded",()=>{
-  initBoard();
-});
+let _p="today", _catFilter="", _payFilter="";
+
+const CAT_MAP={
+  "Haematology":["CBC","ESR","Platelet Count"],
+  "Hormone":["TSH","Vitamin D","HbA1c","Thyroid Profile"],
+  "Biochemistry":["Lipid Profile","Blood Sugar","LFT","RFT","Serum Creatinine"],
+  "Radiology":["USG Abdomen","X-Ray Chest","ECG"],
+  "Microbiology":["Dengue NS1","Urine Routine"]
+};
+
+document.addEventListener("DOMContentLoaded",()=>{ initBoard(); });
 function initBoard(){ render(); setInterval(render,45000); }
+
+function rvCat(v){ _catFilter=v; renderFiltered(); }
+function rvPay(v){ _payFilter=v; renderFiltered(); }
 
 function render(){
   const el=document.getElementById("bm");
-  const base=_p==="today"?R(18000,32000):_p==="week"?R(140000,220000):R(520000,720000);
-  const prev=_p==="today"?R(15000,30000):_p==="week"?R(120000,200000):R(480000,680000);
-  const dp=pct(base,prev);
-  const cash=Math.round(base*.41),upi=Math.round(base*.49),card=base-cash-upi;
-  const variable=Math.round(base*.25);
+  const MONTHLY_TARGET=850000;
+  const DAILY_TARGET=Math.round(MONTHLY_TARGET/26);
+  const PATIENT_TARGET=55;
   const COSTS={Salaries:115000,Rent:40000,EMI:38000,Electricity:18000,Marketing:25000,Tech:5299};
   const totalFixed=Object.values(COSTS).reduce((a,b)=>a+b,0);
-  const fixedShare=_p==="today"?Math.round(totalFixed/26):_p==="week"?Math.round(totalFixed/4):totalFixed;
-  const profit=base-variable-fixedShare;const margin=Math.round(profit/base*100);
-  const monthSoFar=R(420000,640000);const tgt=850000;const tgtPct=Math.round(monthSoFar/tgt*100);
-  const daysLeft=30-new Date().getDate();const needed=Math.max(0,(tgt-monthSoFar)/Math.max(1,daysLeft));
+
+  const base=_p==="today"?R(22000,40000):_p==="week"?R(160000,250000):R(550000,740000);
+  const prev=_p==="today"?R(18000,36000):_p==="week"?R(140000,220000):R(510000,700000);
+  const dp=pct(base,prev);
+
+  const patients=_p==="today"?R(38,62):_p==="week"?R(265,430):R(1060,1700);
+  const avgTicket=Math.round(base/patients);
+
+  const cashPct=R(38,45), upiPct=R(45,52), cardPct=100-cashPct-upiPct;
+  const cash=Math.round(base*cashPct/100);
+  const upi=Math.round(base*upiPct/100);
+  const card=base-cash-upi;
+
+  const div=_p==="today"?26:_p==="week"?4:1;
+  const fixedShare=Math.round(totalFixed/div);
+  const variable=Math.round(base*0.25);
+  const profit=base-variable-fixedShare;
+  const margin=Math.round(profit/base*100);
+
+  const monthSoFar=R(460000,670000);
+  const tgtPct=Math.round(monthSoFar/MONTHLY_TARGET*100);
+  const daysLeft=Math.max(1,30-new Date().getDate());
+  const needed=Math.max(0,(MONTHLY_TARGET-monthSoFar)/daysLeft);
+  const runRate=_p==="today"?base:Math.round(base/(_p==="week"?7:new Date().getDate()));
+  const runRatePct=Math.round(runRate/DAILY_TARGET*100);
+
   const pLabel={today:"Today",week:"This week",month:"This month"}[_p];
-  const labels=_p==="today"?["7AM","8","9","10","11","12","1","2","3","4","5","6","7","8"]:_p==="week"?["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]:Array.from({length:new Date().getDate()},(_,i)=>`${i+1}`);
-  const rd=labels.map(()=>_p==="today"?R(400,3200):R(15000,38000));
-  const pd=rd.map(v=>v+R(-3000,3000));
+
+  const trendLabels=_p==="today"?["7","8","9","10","11","12","13","14","15","16","17","18","19","20"]:
+    _p==="week"?["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]:
+    Array.from({length:new Date().getDate()},(_,i)=>`${i+1}`);
+  const trendData=trendLabels.map(()=>_p==="today"?R(600,4800):_p==="week"?R(18000,45000):R(18000,38000));
+  const prevTrend=trendData.map(v=>Math.max(0,v+R(-5000,5000)));
+
+  const testRevenue=[
+    {t:"Vitamin D",v:R(38000,58000)},{t:"CBC",v:R(28000,44000)},
+    {t:"TSH",v:R(22000,36000)},{t:"USG Abdomen",v:R(20000,35000)},
+    {t:"Lipid Profile",v:R(18000,30000)},{t:"HbA1c",v:R(15000,26000)},
+    {t:"LFT",v:R(12000,22000)},{t:"X-Ray Chest",v:R(10000,18000)}
+  ].sort((a,b)=>b.v-a.v);
+  const maxTestRev=testRevenue[0].v;
+
+  const docRevenue=DOCS.filter(d=>d!=="Walk-in").map(d=>({
+    name:d.replace("Dr ",""),v:R(28000,98000),pts:R(9,30)
+  })).sort((a,b)=>b.v-a.v);
+  const maxDocRev=Math.max(...docRevenue.map(d=>d.v),1);
 
   el.innerHTML=`
   <div class="bh">
-    <div><div class="bht">Revenue board</div><div class="bhs">Collections, P&L, milestones and cost breakdown</div></div>
+    <div>
+      <div class="bht">Revenue Board</div>
+      <div class="bhs">Collections · P&L · Run rate · Cost structure</div>
+    </div>
     <div class="bhr">
       <div class="ptog">
         <button class="ptb ${_p==="today"?"on":""}" onclick="_p='today';render()">Today</button>
-        <button class="ptb ${_p==="week"?"on":""}" onclick="_p='week';render()">Week</button>
-        <button class="ptb ${_p==="month"?"on":""}" onclick="_p='month';render()">Month</button>
+        <button class="ptb ${_p==="week"?"on":""}" onclick="_p='week';render()">This week</button>
+        <button class="ptb ${_p==="month"?"on":""}" onclick="_p='month';render()">This month</button>
       </div>
       <span class="htm" id="htime"></span>
     </div>
   </div>
+
   <div class="fb">
-    <select><option>All test categories</option><option>Haematology</option><option>Hormone</option><option>Biochemistry</option><option>Radiology</option></select>
-    <select><option>All payment modes</option><option>Cash only</option><option>Digital only</option></select>
+    <select id="rv-cat" onchange="rvCat(this.value)">
+      <option value="">All test categories</option>
+      <option value="Haematology">Haematology</option>
+      <option value="Hormone">Hormone</option>
+      <option value="Biochemistry">Biochemistry</option>
+      <option value="Radiology">Radiology</option>
+      <option value="Microbiology">Microbiology</option>
+    </select>
+    <select id="rv-pay" onchange="rvPay(this.value)">
+      <option value="">All payment modes</option>
+      <option value="cash">Cash only</option>
+      <option value="digital">Digital only</option>
+    </select>
     <div class="fsp"></div>
     ${_p==="today"?`<input type="date" value="${today()}">`:`<span style="font-size:11px;color:var(--ink3)">${pLabel}</span>`}
   </div>
+
   <div class="cband">
     <span><strong>${fK(base)}</strong> ${pLabel.toLowerCase()}</span><span class="ctx-sep">·</span>
     <span>${dp>0?"↑":"↓"}<strong>${Math.abs(dp)}%</strong> vs previous</span><span class="ctx-sep">·</span>
-    <span>Margin <strong>${margin}%</strong></span><span class="ctx-sep">·</span>
-    <span>Monthly target <strong>${tgtPct}%</strong> complete · <strong>${daysLeft}</strong> days left</span>
+    <span>Avg ticket <strong>${f(avgTicket)}</strong></span><span class="ctx-sep">·</span>
+    <span>Margin <strong>${margin>0?margin+"% profit":Math.abs(margin)+"% loss"}</strong></span><span class="ctx-sep">·</span>
+    <span>Monthly <strong>${tgtPct}%</strong> · <strong>${daysLeft}</strong> days left</span>
   </div>
+
   <div class="bb">
+
     <div class="krow k4" style="margin-bottom:12px">
-      ${kpi(pLabel+" revenue",fK(base),"gross collections",dp>0?"up":"dn",`${dp>0?"↑":"↓"}${Math.abs(dp)}% vs prev`,"tl",{color:"var(--teal)"})}
-      ${kpi("Net profit",fK(Math.abs(profit)),`margin ${margin}%`,profit>0?"up":"dn",profit>0?"↑ Profitable":"↓ Loss","gn",{color:profit>0?"var(--grn)":"var(--red)"})}
-      ${kpi("Cash",fK(cash),`${Math.round(cash/base*100)}% of total`,"fl","→ stable","")}
-      ${kpi("UPI / Card",fK(upi+card),`${Math.round((upi+card)/base*100)}% of total`,"up","↑ trending","bl")}
+      ${kpi(pLabel+" revenue",fK(base),
+        `gross collections · ${patients} patients`,
+        dp>0?"up":"dn",`${dp>0?"↑":"↓"}${Math.abs(dp)}% vs previous`,"tl",{color:"var(--teal)"})}
+      ${kpi("Net profit",fK(Math.abs(profit)),
+        `margin ${margin}% · after all costs`,
+        profit>0?"up":"dn",profit>0?"↑ Profitable":"↓ Loss making","gn",
+        {color:profit>0?"var(--grn)":"var(--red)"})}
+      ${kpi("Avg ticket size",f(avgTicket),
+        `per patient · ${patients} visits`,
+        avgTicket>550?"up":"fl",avgTicket>550?"↑ Good":"→ Can improve","bl")}
+      ${kpi("Monthly target",tgtPct+"%",
+        `${fK(monthSoFar)} of ₹${fK(MONTHLY_TARGET)} · ${daysLeft} days left`,
+        tgtPct>=70?"ok":"wn",tgtPct>=70?"On track":"Needs push","tl",
+        {color:tgtPct>=70?"var(--teal)":"var(--amb)",prog:Math.min(tgtPct,100)})}
     </div>
-    <div class="krow k4" style="margin-bottom:16px">
-      ${kpi("Monthly target",tgtPct+"%","of ₹8.5L target",tgtPct>=70?"ok":"wn",tgtPct>=70?"On track":"Needs push","tl",{color:tgtPct>=70?"var(--teal)":"var(--amb)",prog:tgtPct})}
-      ${kpi("Days remaining",daysLeft+" days",`need ${fK(needed)}/day`,needed<26000?"ok":"wn",needed<26000?"Achievable":"Stretch","am")}
-      ${kpi("Variable costs",fK(variable),"reagents 25% of revenue","fl","→ fixed ratio","")}
-      ${kpi("Fixed cost share",fK(fixedShare),`of ₹${fK(totalFixed)}/month`,"fl","→ rent, salaries, EMI","")}
+
+    <div id="rv-kpi2" class="krow k4" style="margin-bottom:16px">
+      ${kpi("Cash collected",fK(cash),
+        `${cashPct}% of total · physical float`,
+        "fl","→ reconcile daily","am")}
+      ${kpi("UPI / Digital",fK(upi+card),
+        `${upiPct+cardPct}% of total · auto-reconciled`,
+        "up","↑ preferred mode","bl")}
+      ${kpi("Daily run rate",fK(runRate),
+        `target ${fK(DAILY_TARGET)}/day`,
+        runRatePct>=100?"up":"wn",
+        runRatePct>=100?"↑ Ahead of pace":"↓ Below required","gn",
+        {color:runRatePct>=100?"var(--grn)":"var(--red)",prog:Math.min(runRatePct,100),progColor:runRatePct>=100?"#1D9E75":"#E24B4A"})}
+      ${kpi("Need to hit target",fK(needed)+"/day",
+        `${daysLeft} days left · ${fK(MONTHLY_TARGET-monthSoFar)} remaining`,
+        needed<=DAILY_TARGET?"ok":"wn",
+        needed<=DAILY_TARGET?"Achievable":"Stretch target","rd",
+        {color:needed<=DAILY_TARGET?"var(--grn)":"var(--amb)"})}
     </div>
+
     <div class="panel" style="margin-bottom:12px">
       <div class="ptl">Revenue trend <span class="ptag">${pLabel.toLowerCase()} vs previous period</span></div>
       <div class="cw t"><canvas id="c-rv"></canvas></div>
     </div>
+
     <div class="g3" style="margin-bottom:12px">
       <div class="panel">
-        <div class="ptl">P&L breakdown</div>
-        <div class="fr"><span>Gross revenue</span><span class="fv ft">${fK(base)}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">Variable costs (25%)</span><span class="fv fn">−${fK(variable)}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">Salaries</span><span class="fv fn">−${fK(_p==="today"?Math.round(115000/26):_p==="week"?Math.round(115000/4):115000)}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">Rent</span><span class="fv fn">−${fK(_p==="today"?Math.round(40000/26):_p==="week"?Math.round(40000/4):40000)}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">EMI</span><span class="fv fn">−${fK(_p==="today"?Math.round(38000/26):_p==="week"?Math.round(38000/4):38000)}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">Other fixed</span><span class="fv fn">−${fK(Math.round((18000+25000+5299)/(_p==="today"?26:_p==="week"?4:1)))}</span></div>
-        <div class="fr total"><span style="font-weight:500">Net ${pLabel.toLowerCase()}</span><span class="fv" style="color:${profit>0?"var(--grn)":"var(--red)"}">${profit>=0?"+":""}${fK(profit)}</span></div>
+        <div class="ptl">P&L breakdown <span class="ptag">${pLabel.toLowerCase()}</span></div>
+        <div class="fr"><span style="font-weight:500">Gross revenue</span><span class="fv ft">${fK(base)}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Reagents &amp; consumables (25%)</span><span class="fv fn">−${fK(variable)}</span></div>
+        <div class="fr" style="border-top:0.5px dashed var(--brd);margin-top:4px;padding-top:8px"><span style="color:var(--ink3)">Gross contribution</span><span class="fv" style="color:var(--teal)">${fK(base-variable)}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Salaries</span><span class="fv fn">−${fK(Math.round(115000/div))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Rent</span><span class="fv fn">−${fK(Math.round(40000/div))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− EMI</span><span class="fv fn">−${fK(Math.round(38000/div))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Electricity</span><span class="fv fn">−${fK(Math.round(18000/div))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Marketing</span><span class="fv fn">−${fK(Math.round(25000/div))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Tech</span><span class="fv fn">−${fK(Math.round(5299/div))}</span></div>
+        <div class="fr total"><span style="font-weight:600">Net profit</span><span class="fv" style="color:${profit>0?"var(--grn)":"var(--red)"};font-size:15px">${profit>=0?"+":""}${fK(profit)}</span></div>
+        <div class="fr" style="border-top:none"><span style="color:var(--ink3)">Profit margin</span><span class="fv" style="color:${margin>20?"var(--grn)":margin>10?"var(--amb)":"var(--red)"}">${margin}%</span></div>
+        <div class="fr"><span style="color:var(--ink3)">Break-even revenue</span><span class="fv">${fK(Math.round(fixedShare/0.75))}</span></div>
       </div>
-      <div class="panel">
-        <div class="ptl">Top tests by revenue</div>
-        ${["CBC","TSH","Vitamin D","USG Abdomen","Lipid Profile","HbA1c"].map((t,i)=>{const rv=R(2000,14000);return`
+
+      <div class="panel" id="rv-tests-panel">
+        <div class="ptl">Top tests by revenue <span class="ptag" id="rv-tests-tag">this month</span></div>
+        ${testRevenue.map((t,i)=>`
         <div class="pbl">
-          <div class="pbl-top"><span>${t}</span><span style="font-weight:500;color:var(--teal)">${fK(rv)}</span></div>
-          <div class="prog"><div class="progf" style="width:${100-i*14}%"></div></div>
-        </div>`}).join("")}
-      </div>
-      <div class="panel">
-        <div class="ptl">Monthly milestones</div>
-        ${[{l:"Revenue target",v:tgtPct,t:"₹8.5L",c:"var(--teal2)"},{l:"Profit target",v:R(30,80),t:"₹3L",c:"var(--grn)"},{l:"Patients/day",v:Math.round(R(35,65)/55*100),t:"55/day",c:"var(--blue)"},{l:"TAT compliance",v:R(78,96),t:"100%",c:"var(--g2)"}].map(m=>`
-        <div class="ms-row">
-          <div class="ms-lbl"><span>${m.l}</span><span style="color:${m.c}">${m.v}% · target ${m.t}</span></div>
-          <div class="ms-bar"><div class="ms-fill" style="width:${m.v}%;background:${m.c}"></div></div>
+          <div class="pbl-top">
+            <span>${t.t}</span>
+            <span style="font-weight:500;color:var(--teal)">${fK(t.v)}</span>
+          </div>
+          <div class="prog"><div class="progf" style="width:${Math.round(t.v/maxTestRev*100)}%;background:${i===0?"var(--teal)":i===1?"var(--teal2)":i===2?"var(--g2)":"#C8C4B8"}"></div></div>
         </div>`).join("")}
-        <div class="fr" style="margin-top:10px"><span>Month collected so far</span><span class="fv ft">${fK(monthSoFar)}</span></div>
-        <div class="fr"><span>Need per day remaining</span><span class="fv" style="color:${needed<26000?"var(--grn)":"var(--red)"}">${fK(needed)}/day</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="ptl">Revenue by doctor <span class="ptag">this month</span></div>
+        ${docRevenue.map((d,i)=>`
+        <div class="doc-row">
+          <span style="width:90px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${d.name}</span>
+          <div class="doc-bar-wrap"><div class="doc-bar" style="width:${Math.round(d.v/maxDocRev*100)}%;background:${i===0?"var(--teal)":i===1?"var(--blue)":i===2?"var(--g2)":"#C8C4B8"}"></div></div>
+          <span style="font-size:11px;font-family:'DM Mono',monospace;min-width:50px;text-align:right">${fK(d.v)}</span>
+        </div>`).join("")}
+        <div style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--brd)">
+          <div class="fr"><span style="color:var(--ink3)">Avg per doctor</span><span class="fv">${fK(Math.round(docRevenue.reduce((a,d)=>a+d.v,0)/docRevenue.length))}</span></div>
+          <div class="fr"><span style="color:var(--ink3)">Top doctor share</span><span class="fv">${Math.round(docRevenue[0].v/docRevenue.reduce((a,d)=>a+d.v,0)*100)}% of total</span></div>
+        </div>
       </div>
     </div>
-    <div class="g2">
-      <div class="panel">
-        <div class="ptl">Payment mode split</div>
+
+    <div class="g3">
+      <div class="panel" id="rv-pay-panel">
+        <div class="ptl">Payment mode split <span class="ptag" id="rv-pay-tag"></span></div>
         <div class="cw s"><canvas id="c-pay"></canvas></div>
-        <div style="margin-top:10px">${[{l:"Cash",v:cash,c:"var(--teal)"},{l:"UPI",v:upi,c:"var(--g2)"},{l:"Card",v:card,c:"var(--blue)"}].map(x=>`
-        <div class="pbl"><div class="pbl-top"><span>${x.l}</span><span>${fK(x.v)} (${Math.round(x.v/base*100)}%)</span></div>
-        <div class="prog"><div class="progf" style="width:${Math.round(x.v/base*100)}%;background:${x.c}"></div></div></div>`).join("")}</div>
+        <div id="rv-pay-bars" style="margin-top:10px">
+          ${[{l:"Cash",v:cash,p:cashPct,c:"var(--teal)"},{l:"UPI",v:upi,p:upiPct,c:"var(--g2)"},{l:"Card",v:card,p:cardPct,c:"var(--blue)"}].map(x=>`
+          <div class="pbl">
+            <div class="pbl-top"><span>${x.l}</span><span>${fK(x.v)} (${x.p}%)</span></div>
+            <div class="prog"><div class="progf" style="width:${x.p}%;background:${x.c}"></div></div>
+          </div>`).join("")}
+          <div style="margin-top:8px;font-size:10px;color:var(--ink3)">
+            ${upiPct>cashPct?"↑ Digital leads · healthy trend":"→ Cash dominant · encourage UPI"}
+          </div>
+        </div>
       </div>
+
       <div class="panel">
-        <div class="ptl">Monthly cost structure</div>
+        <div class="ptl">Monthly milestones</div>
+        ${[
+          {l:"Revenue target",v:tgtPct,t:`₹${fK(MONTHLY_TARGET)}`,c:"var(--teal2)"},
+          {l:"Profit target",v:R(40,78),t:"₹3L net",c:"var(--grn)"},
+          {l:"Patients/day",v:Math.round(R(38,62)/PATIENT_TARGET*100),t:`${PATIENT_TARGET}/day`,c:"var(--blue)"},
+          {l:"TAT compliance",v:R(78,96),t:"≥90%",c:"var(--g2)"}
+        ].map(m=>`
+        <div class="ms-row">
+          <div class="ms-lbl">
+            <span>${m.l}</span>
+            <span style="color:${m.c}">${m.v}% <span style="color:var(--ink3);font-weight:400">· target ${m.t}</span></span>
+          </div>
+          <div class="ms-bar"><div class="ms-fill" style="width:${Math.min(m.v,100)}%;background:${m.c}"></div></div>
+        </div>`).join("")}
+        <div style="margin-top:12px;padding-top:10px;border-top:0.5px solid var(--brd)">
+          <div class="fr"><span>Collected so far</span><span class="fv ft">${fK(monthSoFar)}</span></div>
+          <div class="fr"><span>Remaining target</span><span class="fv" style="color:var(--ink3)">${fK(MONTHLY_TARGET-monthSoFar)}</span></div>
+          <div class="fr"><span>Required per day</span><span class="fv" style="color:${needed<=DAILY_TARGET?"var(--grn)":"var(--red)"}">${fK(needed)}/day</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ptl">Monthly cost structure <span class="ptag">fixed expenses</span></div>
         <div class="cw s"><canvas id="c-cost"></canvas></div>
-        <div style="margin-top:10px">${Object.entries(COSTS).map(([k,v])=>`<div class="fr"><span>${k}</span><span class="fv">${fK(v)}</span></div>`).join("")}</div>
+        <div style="margin-top:10px">
+          ${Object.entries(COSTS).map(([k,v])=>`
+          <div class="fr"><span>${k}</span><span class="fv">${fK(v)}</span></div>`).join("")}
+          <div class="fr total"><span style="font-weight:600">Total fixed/month</span><span class="fv" style="color:var(--red)">−${fK(totalFixed)}</span></div>
+          <div class="fr" style="border-top:none"><span style="color:var(--ink3)">Fixed as % of target</span><span class="fv">${Math.round(totalFixed/MONTHLY_TARGET*100)}%</span></div>
+        </div>
       </div>
     </div>
   </div>`;
 
-  lineChart("c-rv",labels,[
-    {label:pLabel,data:rd,borderColor:"#0A5548",backgroundColor:"rgba(10,85,72,.08)",fill:true},
-    {label:"Previous",data:pd,borderColor:"#D3D1C7",borderDash:[3,3],pointRadius:0}
-  ]);
+  lineChart("c-rv",trendLabels,[
+    {label:pLabel,data:trendData,borderColor:"#0A5548",backgroundColor:"rgba(10,85,72,.08)",fill:true},
+    {label:"Previous",data:prevTrend,borderColor:"#D3D1C7",borderDash:[3,3],pointRadius:0}
+  ],{yFmt:v=>v>=100000?"₹"+(v/100000).toFixed(1)+"L":v>=1000?"₹"+(v/1000).toFixed(0)+"K":"₹"+v});
   doughnut("c-pay",["Cash","UPI","Card"],[cash,upi,card],["#0A5548","#C98420","#185FA5"]);
   barChart("c-cost",Object.keys(COSTS),Object.values(COSTS),"#C98420",{yFmt:v=>"₹"+(v/1000).toFixed(0)+"K"});
+
+  // Store for filter updates
+  window._rvData = { testRevenue, cash, upi, card, cashPct, upiPct, cardPct };
+
+  // Re-apply any active filters
+  if (_catFilter || _payFilter) renderFiltered();
+}
+
+function renderFiltered() {
+  const d = window._rvData;
+  if (!d) return;
+
+  // Test category filter — updates the test revenue panel
+  const testsEl = document.getElementById("rv-tests-panel");
+  const testsTag = document.getElementById("rv-tests-tag");
+  if (testsEl && testsTag) {
+    const allowedTests = _catFilter ? (CAT_MAP[_catFilter] || []) : null;
+    const filtered = allowedTests
+      ? d.testRevenue.filter(t => allowedTests.some(a => t.t.toLowerCase().includes(a.toLowerCase())))
+      : d.testRevenue;
+    const maxV = filtered.length ? filtered[0].v : 1;
+    testsTag.textContent = _catFilter ? _catFilter : "this month";
+
+    const barsEl = testsEl.querySelector(".pbl") ? testsEl : testsEl;
+    // Replace bars content (keep the header div)
+    const header = testsEl.querySelector(".ptl");
+    testsEl.innerHTML = "";
+    testsEl.appendChild(header);
+    if (filtered.length === 0) {
+      testsEl.innerHTML += `<div style="padding:16px;text-align:center;font-size:12px;color:var(--ink3)">No tests in this category</div>`;
+    } else {
+      filtered.forEach((t,i) => {
+        testsEl.innerHTML += `
+        <div class="pbl">
+          <div class="pbl-top"><span>${t.t}</span><span style="font-weight:500;color:var(--teal)">${fK(t.v)}</span></div>
+          <div class="prog"><div class="progf" style="width:${Math.round(t.v/maxV*100)}%;background:${i===0?"var(--teal)":i===1?"var(--teal2)":i===2?"var(--g2)":"#C8C4B8"}"></div></div>
+        </div>`;
+      });
+    }
+  }
+
+  // Payment filter — updates KPI row 2 and payment bars
+  const kpi2 = document.getElementById("rv-kpi2");
+  const payBars = document.getElementById("rv-pay-bars");
+  const payTag = document.getElementById("rv-pay-tag");
+  if (kpi2 && payBars) {
+    const cashV  = _payFilter==="digital" ? 0 : d.cash;
+    const digitalV = _payFilter==="cash"  ? 0 : d.upi + d.card;
+    const totalV = cashV + digitalV;
+    const cPct = totalV>0?Math.round(cashV/totalV*100):0;
+    const dPct = totalV>0?Math.round(digitalV/totalV*100):0;
+
+    if (payTag) payTag.textContent = _payFilter==="cash"?"Cash only":_payFilter==="digital"?"Digital only":"";
+
+    // Update cash/UPI KPI cards only (first 2 in row 2)
+    const cards = kpi2.querySelectorAll(".kc");
+    if (cards[0]) cards[0].querySelector(".kv").textContent = fK(cashV);
+    if (cards[1]) cards[1].querySelector(".kv").textContent = fK(digitalV);
+
+    payBars.innerHTML = [
+      {l:"Cash",  v:cashV,   p:cPct, c:"var(--teal)"},
+      {l:"Digital",v:digitalV,p:dPct, c:"var(--g2)"}
+    ].filter(x=>!(_payFilter==="digital"&&x.l==="Cash"||_payFilter==="cash"&&x.l==="Digital")).map(x=>`
+      <div class="pbl">
+        <div class="pbl-top"><span>${x.l}</span><span>${fK(x.v)} (${x.p}%)</span></div>
+        <div class="prog"><div class="progf" style="width:${x.p}%;background:${x.c}"></div></div>
+      </div>`).join("")
+      + `<div style="margin-top:8px;font-size:10px;color:var(--ink3)">
+          ${_payFilter?"Filter active":"↑ Digital leads · healthy trend"}
+        </div>`;
+  }
+
+  // Highlight active filter selects
+  ["rv-cat","rv-pay"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.borderColor=el.value?"var(--teal2)":"";
+  });
 }
 </script>
 </body>
