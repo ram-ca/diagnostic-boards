@@ -104,21 +104,19 @@ function kpi(label, val, sub, trendClass, trendText, accentClass, opts = {}) {
 
 // ── Login ─────────────────────────────────────────────────────
 function initLogin(currentBoardId) {
-  // If already authenticated this session, skip login
-  if (STATE.role) {
-    const board = BOARDS.find(b => b.id === currentBoardId);
-    if (board && board.roles.includes(STATE.role)) {
-      document.getElementById("login").style.display = "none";
-      document.getElementById("app").style.display = "flex";
-      buildNav(currentBoardId);
-      startClock();
-      return true;
-    }
-  }
-  buildLoginUI(currentBoardId);
-  return false;
+  STATE.role = "owner";
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+  buildNav(currentBoardId);
+  startClock();
+  return true;
 }
 
+function buildLoginUI(currentBoardId) {
+  STATE.role = STATE.role || "owner";
+  document.getElementById("login").innerHTML = `
+    ${LOGO_SVG}
+    <div class="lcard">
       <div class="lnm">Sharada</div>
       <div class="lsb">Operations Boards</div>
       <div class="lro">
@@ -139,8 +137,22 @@ function initLogin(currentBoardId) {
     </div>`;
 }
 
+function selRole(role, btn) {
+  STATE.role = role;
+  document.querySelectorAll(".rb").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+  STATE.pin = ""; updDots();
+}
+
+function updDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById("d" + i);
+    if (d) d.style.background = i < STATE.pin.length ? "var(--teal)" : "var(--brd)";
+  }
+}
+
 function pk(k) { if (STATE.pin.length >= 4) return; STATE.pin += k; updDots(); if (STATE.pin.length === 4) setTimeout(() => ps(window._boardId), 120); }
-function pc() { STATE.pin = STATE.pin.slice(0, -1); updDots(); } }
+function pc() { STATE.pin = STATE.pin.slice(0, -1); updDots(); }
 
 function ps(boardId) {
   const board = BOARDS.find(b => b.id === boardId);
