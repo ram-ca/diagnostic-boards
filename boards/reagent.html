@@ -6,34 +6,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Outfit:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/shared.css">
 <style>
-.lcard{background:var(--white);border:0.5px solid var(--brd);border-radius:16px;padding:36px;width:340px;text-align:center;}
-.lnm{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:400;color:var(--teal);letter-spacing:.06em;margin-bottom:3px;}
-.lsb{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);}
-.lro{display:flex;gap:5px;margin:18px 0 12px;justify-content:center;}
-.rb{font-size:11px;padding:5px 12px;border-radius:18px;border:0.5px solid var(--brd);cursor:pointer;background:transparent;color:var(--ink3);font-family:'Outfit',sans-serif;}
-.rb.on{background:var(--teal);color:#fff;border-color:var(--teal);}
-.lpd{display:flex;gap:7px;justify-content:center;margin:12px 0 16px;}
-.dot{width:12px;height:12px;border-radius:50%;background:var(--cream);border:1.5px solid var(--brd);transition:all .15s;}
-.dot.f{background:var(--teal);border-color:var(--teal);}
-.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
-.pk{background:var(--cream);border:0.5px solid var(--brd);border-radius:9px;padding:12px;font-size:18px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .1s;color:var(--ink);}
-.pk:hover{background:var(--tl);border-color:var(--teal);}.pk:active{transform:scale(.96);}
-.lerr{font-size:12px;color:var(--red);height:18px;margin-bottom:4px;}
-.lhint{font-size:10px;color:var(--ink3);}
 #app{display:none;flex:1;flex-direction:row;overflow:hidden;width:100%;}
+.factive{border-color:var(--teal2)!important;background:var(--tl)!important;}
+.clr-btn{font-size:11px;font-family:'DM Mono',monospace;color:var(--teal2);background:var(--tl);border:0.5px solid var(--teal2);border-radius:6px;padding:5px 12px;cursor:pointer;white-space:nowrap;}
+.clr-btn:hover{background:var(--teal2);color:#fff;}
 .rr{display:grid;grid-template-columns:1fr 160px 55px 90px 90px;gap:8px;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--brd);}
 .rr:last-child{border-bottom:none;}
 .rt{background:var(--cream);border-radius:3px;height:7px;overflow:hidden;}
-.rf{height:100%;border-radius:3px;transition:width .5s;}
+.rf{height:100%;border-radius:3px;}
 .rf.ok{background:#1D9E75;}.rf.low{background:#EF9F27;}.rf.critical{background:#E24B4A;}
-.rd{font-size:11px;font-weight:500;text-align:right;font-family:'DM Mono',monospace;}
-.rd.ok{color:var(--grn);}.rd.low{color:var(--amb);}.rd.critical{color:var(--red);}
+.rdv{font-size:11px;font-weight:500;text-align:right;font-family:'DM Mono',monospace;}
+.rdv.ok{color:var(--grn);}.rdv.low{color:var(--amb);}.rdv.critical{color:var(--red);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="../shared/shared.js"></script>
 </head>
 <body>
-
 <div id="app">
   <aside class="sb">
     <div class="sbb"><div class="sbn"><span class="ld"></span>Sharada</div><div class="sbs">Reagent Board</div></div>
@@ -44,89 +32,207 @@
   <div class="main" id="bm"></div>
 </div>
 <script>
-window._boardId="reagent";
-const RQS=[
-  {name:"CBC reagent pack",pct:14,days:2,du:14,cost:420,status:"critical",sup:"Sysmex India",ph:"040-23456789"},
-  {name:"Dengue NS1 kit",pct:9,days:1.5,du:12,cost:650,status:"critical",sup:"J Mitra & Co",ph:"011-29234141"},
-  {name:"TSH reagent",pct:38,days:5,du:12,cost:380,status:"low",sup:"Roche Diagnostics",ph:"022-28303030"},
-  {name:"Vitamin D kit",pct:45,days:6,du:9,cost:520,status:"low",sup:"Roche Diagnostics",ph:"022-28303030"},
-  {name:"HbA1c reagent",pct:52,days:8,du:10,cost:460,status:"ok",sup:"Bio-Rad India",ph:"080-41236789"},
-  {name:"Blood sugar kit",pct:68,days:11,du:18,cost:80,status:"ok",sup:"SD Biosensor",ph:"124-4761234"},
-  {name:"Lipid profile kit",pct:72,days:13,du:11,cost:310,status:"ok",sup:"Randox India",ph:"040-27654321"},
-  {name:"Urine strips",pct:80,days:16,du:22,cost:12,status:"ok",sup:"Erba Mannheim",ph:"022-66149700"},
-  {name:"LFT reagent",pct:85,days:19,du:12,cost:290,status:"ok",sup:"Tulip Diagnostics",ph:"0832-2746000"},
-  {name:"RFT reagent",pct:90,days:22,du:11,cost:280,status:"ok",sup:"Tulip Diagnostics",ph:"0832-2746000"},
-  {name:"Thyroid profile",pct:60,days:10,du:8,cost:480,status:"ok",sup:"Roche Diagnostics",ph:"022-28303030"},
-  {name:"Dengue IgM/IgG",pct:55,days:9,du:8,cost:480,status:"ok",sup:"J Mitra & Co",ph:"011-29234141"},
-];
-document.addEventListener("DOMContentLoaded",()=>{
-  initBoard();
-});
-function initBoard(){ render(); }
+window._boardId = "reagent";
+let _rqFilt = { s:"", lv:"" };
 
-function render(){
-  const el=document.getElementById("bm");
-  const crit=RQS.filter(r=>r.status==="critical"),low=RQS.filter(r=>r.status==="low");
-  const spend=RQS.reduce((a,r)=>a+r.cost*r.du*26,0);
-  el.innerHTML=`
+const RQS = [
+  {name:"CBC reagent pack",  pct:14, days:2,   du:14, cost:420, status:"critical", sup:"Sysmex India",      ph:"040-23456789"},
+  {name:"Dengue NS1 kit",    pct:9,  days:1.5, du:12, cost:650, status:"critical", sup:"J Mitra & Co",      ph:"011-29234141"},
+  {name:"TSH reagent",       pct:38, days:5,   du:12, cost:380, status:"low",      sup:"Roche Diagnostics", ph:"022-28303030"},
+  {name:"Vitamin D kit",     pct:45, days:6,   du:9,  cost:520, status:"low",      sup:"Roche Diagnostics", ph:"022-28303030"},
+  {name:"HbA1c reagent",     pct:52, days:8,   du:10, cost:460, status:"ok",       sup:"Bio-Rad India",     ph:"080-41236789"},
+  {name:"Blood sugar kit",   pct:68, days:11,  du:18, cost:80,  status:"ok",       sup:"SD Biosensor",      ph:"124-4761234"},
+  {name:"Lipid profile kit", pct:72, days:13,  du:11, cost:310, status:"ok",       sup:"Randox India",      ph:"040-27654321"},
+  {name:"Urine strips",      pct:80, days:16,  du:22, cost:12,  status:"ok",       sup:"Erba Mannheim",     ph:"022-66149700"},
+  {name:"LFT reagent",       pct:85, days:19,  du:12, cost:290, status:"ok",       sup:"Tulip Diagnostics", ph:"0832-2746000"},
+  {name:"RFT reagent",       pct:90, days:22,  du:11, cost:280, status:"ok",       sup:"Tulip Diagnostics", ph:"0832-2746000"},
+  {name:"Thyroid profile",   pct:60, days:10,  du:8,  cost:480, status:"ok",       sup:"Roche Diagnostics", ph:"022-28303030"},
+  {name:"Dengue IgM/IgG",    pct:55, days:9,   du:8,  cost:480, status:"ok",       sup:"J Mitra & Co",      ph:"011-29234141"},
+];
+const totalMonthlySpend = RQS.reduce((a,r) => a+r.cost*r.du*26, 0);
+
+document.addEventListener("DOMContentLoaded", () => { initBoard(); });
+function initBoard() { render(); }
+
+function getFilteredRQ() {
+  return RQS.filter(r => {
+    const s = _rqFilt.s;
+    return (!s || r.name.toLowerCase().includes(s) || r.sup.toLowerCase().includes(s))
+      && (!_rqFilt.lv || r.status === _rqFilt.lv);
+  });
+}
+
+function anyRQFilterActive() {
+  return !!(_rqFilt.s || _rqFilt.lv);
+}
+
+function render() {
+  const el = document.getElementById("bm");
+  const critAll = RQS.filter(r=>r.status==="critical");
+  const lowAll  = RQS.filter(r=>r.status==="low");
+
+  el.innerHTML = `
   <div class="bh">
-    <div><div class="bht">Reagent board</div><div class="bhs">Stock levels, consumption, reorder alerts and supplier contacts</div></div>
-    <div class="bhr">${crit.length?`<span class="hbg hbw">${crit.length} critical</span>`:""}<span class="hbg ${low.length?"hbd":"hbl"}">${low.length} low</span></div>
+    <div>
+      <div class="bht">Reagent Board</div>
+      <div class="bhs">Stock levels · Consumption · Reorder alerts · Supplier contacts</div>
+    </div>
+    <div class="bhr">
+      ${critAll.length?`<span class="hbg hbw">${critAll.length} critical</span>`:""}
+      <span class="hbg ${lowAll.length?"hbd":"hbl"}">${lowAll.length} low</span>
+    </div>
   </div>
+
   <div class="fb">
-    <input type="text" placeholder="Search reagent or supplier..." id="rq-s" oninput="rqf()">
-    <select id="rq-l" onchange="rqf()"><option value="">All levels</option><option value="critical">Critical (&lt;3 days)</option><option value="low">Low (&lt;7 days)</option><option value="ok">Healthy (&gt;7 days)</option></select>
+    <input type="text" placeholder="Search reagent or supplier…" id="rq-s" oninput="rqf()">
+    <select id="rq-l" onchange="rqf()">
+      <option value="">All levels</option>
+      <option value="critical">Critical (&lt;3 days)</option>
+      <option value="low">Low (&lt;7 days)</option>
+      <option value="ok">Healthy (&gt;7 days)</option>
+    </select>
     <div class="fsp"></div>
-    <span style="font-size:11px;color:var(--ink3)">Monthly spend: <strong>${fK(spend)}</strong></span>
+    <button class="clr-btn" onclick="clearRQFilters()">Clear filters</button>
+    <span style="font-size:11px;color:var(--ink3)">Monthly spend: <strong>${fK(totalMonthlySpend)}</strong></span>
   </div>
-  <div class="cband">
-    <span><strong>${crit.length}</strong> critical — order immediately</span><span class="ctx-sep">·</span>
-    <span><strong>${low.length}</strong> low — order this week</span><span class="ctx-sep">·</span>
-    <span><strong>${RQS.filter(r=>r.status==="ok").length}</strong> healthy</span><span class="ctx-sep">·</span>
-    <span>Monthly reagent spend: <strong>${fK(spend)}</strong></span>
-  </div>
+
+  <div id="rq-cband" class="cband"></div>
+
   <div class="bb">
-    <div class="krow k4" style="margin-bottom:12px">
-      ${kpi("Total tracked",RQS.length,"reagent items","fl","→ all monitored","")}
-      ${kpi("Critical",crit.length,"below 3 days","dn","↓ Order immediately","rd",{color:crit.length?"var(--red)":"var(--grn)"})}
-      ${kpi("Low stock",low.length,"below 7 days","wn","→ Order this week","am",{color:low.length?"var(--amb)":"var(--grn)"})}
-      ${kpi("Healthy",RQS.filter(r=>r.status==="ok").length,"above 7 days","ok","✓ No action needed","gn",{color:"var(--grn)"})}
-    </div>
-    <div class="sl">Immediate action required</div>
-    <div style="margin-bottom:14px">
-      ${crit.map(r=>`<div class="ac acr"><div class="ado"></div><div><div class="att">${r.name} — <strong>${r.days} day${r.days<=1?"":"s"}</strong> remaining (${r.du} units/day usage)</div><div class="abt">Order immediately · Est. cost ${f(r.cost*30)} for 30 units · ${r.sup} · ${r.ph}</div></div></div>`).join("")}
-      ${low.map(r=>`<div class="ac aca"><div class="ado"></div><div><div class="att">${r.name} — ${r.days} days remaining</div><div class="abt">Order before end of week · ${r.sup} · ${r.ph}</div></div></div>`).join("")}
-    </div>
+    <div id="rq-kpis" class="krow k4" style="margin-bottom:12px"></div>
+    <div id="rq-alerts"></div>
+
     <div class="g31">
       <div class="panel">
-        <div class="ptl">All stock levels <span class="ptag" id="rq-cnt">${RQS.length} items</span></div>
-        <div class="th"><span style="flex:1">Reagent</span><span style="width:160px">Level</span><span style="width:55px;text-align:right">Days</span><span style="width:90px;text-align:right">Status</span><span style="width:90px;text-align:right">Daily use</span></div>
-        <div id="rq-list">
-          ${RQS.map(r=>`<div class="rr" data-n="${r.name.toLowerCase()}" data-s="${r.status}"><span style="font-size:12px">${r.name}</span><div class="rt"><div class="rf ${r.status}" style="width:${r.pct}%"></div></div><span class="rd ${r.status}">${r.days}d</span><span style="text-align:right"><span class="pill ${r.status==="critical"?"pc":r.status==="low"?"plo":"pok"}">${r.status==="critical"?"Order now":r.status==="low"?"Order soon":"OK"}</span></span><span style="font-size:11px;color:var(--ink3);text-align:right">${r.du}/day</span></div>`).join("")}
+        <div class="ptl">All stock levels <span class="ptag" id="rq-cnt"></span></div>
+        <div class="th">
+          <span style="flex:1">Reagent</span>
+          <span style="width:160px">Level</span>
+          <span style="width:55px;text-align:right">Days</span>
+          <span style="width:90px;text-align:right">Status</span>
+          <span style="width:90px;text-align:right">Daily use</span>
         </div>
+        <div id="rq-list"></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
-        <div class="panel"><div class="ptl">8-week consumption <span class="ptag">top 4</span></div><div class="cw t"><canvas id="c-t"></canvas></div></div>
-        <div class="panel"><div class="ptl">Monthly cost by reagent</div><div class="cw s"><canvas id="c-c"></canvas></div></div>
+        <div class="panel">
+          <div class="ptl">8-week consumption <span class="ptag">top 4 reagents</span></div>
+          <div class="cw t"><canvas id="c-t"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="ptl">Monthly cost by reagent <span class="ptag">top 7</span></div>
+          <div class="cw s"><canvas id="c-c"></canvas></div>
+        </div>
       </div>
     </div>
   </div>`;
 
-  const weeks=["W1","W2","W3","W4","W5","W6","W7","W8"];
-  lineChart("c-t",weeks,[
-    {label:"CBC",data:weeks.map(()=>R(10,20)),borderColor:"#0A5548"},
-    {label:"TSH",data:weeks.map(()=>R(8,16)),borderColor:"#C98420"},
-    {label:"Dengue",data:weeks.map((_,i)=>R(4,8)+i*2),borderColor:"#A32D2D"},
-    {label:"Vit D",data:weeks.map(()=>R(6,14)),borderColor:"#185FA5"}
-  ]);
-  barChart("c-c",RQS.slice(0,7).map(r=>r.name.split(" ")[0]),RQS.slice(0,7).map(r=>r.cost*r.du*26),"#C98420",{yFmt:v=>"₹"+(v/1000).toFixed(0)+"K"});
+  const weeks = ["W1","W2","W3","W4","W5","W6","W7","W8"];
+  lineChart("c-t", weeks, [
+    {label:"CBC",    data:weeks.map(()=>R(10,20)), borderColor:"#0A5548"},
+    {label:"TSH",    data:weeks.map(()=>R(8,16)),  borderColor:"#C98420"},
+    {label:"Dengue", data:weeks.map((_,i)=>R(4,8)+i*2), borderColor:"#A32D2D"},
+    {label:"Vit D",  data:weeks.map(()=>R(6,14)),  borderColor:"#185FA5"}
+  ], {legend:{display:true, labels:{font:{size:10},boxWidth:8,padding:6}}});
+  barChart("c-c", RQS.slice(0,7).map(r=>r.name.split(" ")[0]), RQS.slice(0,7).map(r=>r.cost*r.du*26), "#C98420", {yFmt:v=>"₹"+(v/1000).toFixed(0)+"K"});
+
+  renderRQDynamic(getFilteredRQ());
+
+  [["rq-s",_rqFilt.s],["rq-l",_rqFilt.lv]]
+    .forEach(([id,val]) => { if(val) { const e=document.getElementById(id); if(e) e.value=val; } });
 }
-function rqf(){
-  const s=(document.getElementById("rq-s")?.value||"").toLowerCase();
-  const l=document.getElementById("rq-l")?.value||"";
-  let n=0;
-  document.querySelectorAll(".rr").forEach(r=>{const ok=(!s||(r.dataset.n||"").includes(s))&&(!l||r.dataset.s===l);r.style.display=ok?"":"none";if(ok)n++;});
-  const c=document.getElementById("rq-cnt");if(c)c.textContent=n+" items";
+
+function renderRQDynamic(items) {
+  const isFiltered = anyRQFilterActive();
+  const crit = items.filter(r => r.status === "critical");
+  const low  = items.filter(r => r.status === "low");
+  const ok   = items.filter(r => r.status === "ok");
+  const urgentSpend = crit.reduce((a,r)=>a+r.cost*30, 0);
+
+  // Context band
+  document.getElementById("rq-cband").innerHTML = `
+    <span>${isFiltered?`<strong>${items.length}</strong> of ${RQS.length} shown`:`<strong>${RQS.length}</strong> reagents tracked`}</span>
+    <span class="ctx-sep">·</span>
+    <span><strong>${crit.length}</strong> critical — order today</span>
+    <span class="ctx-sep">·</span>
+    <span><strong>${low.length}</strong> low — order this week</span>
+    <span class="ctx-sep">·</span>
+    <span><strong>${ok.length}</strong> healthy</span>
+    <span class="ctx-sep">·</span>
+    <span>Monthly spend: <strong>${fK(totalMonthlySpend)}</strong></span>
+    ${crit.length>0?`<span class="ctx-sep">·</span><span style="color:var(--red);font-weight:600">⚠ Urgent order: ${f(urgentSpend)}</span>`:""}
+    ${isFiltered?`<span class="ctx-sep">·</span><span style="color:var(--blue)">Filters active</span>`:""}`;
+
+  // KPIs
+  document.getElementById("rq-kpis").innerHTML =
+    kpi("Tracked items", items.length,
+      isFiltered?`of ${RQS.length} total`:"all reagents",
+      "fl","→ monitoring","")
+    + kpi("Critical", crit.length,
+      crit.length>0?"below 3 days — order now":"all clear",
+      crit.length>0?"dn":"ok",
+      crit.length>0?"↓ Order immediately":"✓ None critical","rd",
+      {color:crit.length>0?"var(--red)":"var(--grn)"})
+    + kpi("Low stock", low.length,
+      low.length>0?"below 7 days — order this week":"all clear",
+      low.length>0?"wn":"ok",
+      low.length>0?"→ Order this week":"✓ None low","am",
+      {color:low.length>0?"var(--amb)":"var(--grn)"})
+    + kpi("Healthy", ok.length,
+      ok.length>0?"above 7 days remaining":"none showing",
+      ok.length>0?"ok":"fl","✓ No action needed","gn",
+      {color:ok.length>0?"var(--grn)":"var(--ink3)"});
+
+  // Alerts
+  let alertsHtml = "";
+  if (crit.length > 0 || low.length > 0) {
+    alertsHtml = `<div class="sl">Action required${isFiltered?" (filtered)":""}</div><div style="margin-bottom:14px">
+      ${crit.map(r=>`<div class="ac acr"><div class="ado"></div><div>
+        <div class="att">${r.name} — <strong>${r.days} day${r.days<=1?"":"s"}</strong> remaining (${r.du} units/day)</div>
+        <div class="abt">Order immediately · Est. ${f(r.cost*30)} for 30 units · ${r.sup} · ${r.ph}</div>
+      </div></div>`).join("")}
+      ${low.map(r=>`<div class="ac aca"><div class="ado"></div><div>
+        <div class="att">${r.name} — ${r.days} days remaining</div>
+        <div class="abt">Order before end of week · ${r.sup} · ${r.ph}</div>
+      </div></div>`).join("")}
+    </div>`;
+  } else if (isFiltered) {
+    alertsHtml = `<div style="padding:10px 0;margin-bottom:14px;font-size:12px;color:var(--grn)">✓ No urgent alerts in current filter</div>`;
+  }
+  document.getElementById("rq-alerts").innerHTML = alertsHtml;
+
+  // Stock table
+  document.getElementById("rq-cnt").textContent = `${items.length} item${items.length!==1?"s":""}`;
+  document.getElementById("rq-list").innerHTML = items.length
+    ? items.map(r=>`<div class="rr">
+        <span style="font-size:12px">${r.name}</span>
+        <div class="rt"><div class="rf ${r.status}" style="width:${r.pct}%"></div></div>
+        <span class="rdv ${r.status}">${r.days}d</span>
+        <span style="text-align:right"><span class="pill ${r.status==="critical"?"pc":r.status==="low"?"plo":"pok"}">${r.status==="critical"?"Order now":r.status==="low"?"Order soon":"OK"}</span></span>
+        <span style="font-size:11px;color:var(--ink3);text-align:right">${r.du}/day</span>
+      </div>`).join("")
+    : `<div style="padding:14px 0;color:var(--ink3);font-size:12px;text-align:center">No reagents match current filters</div>`;
+
+  // Filter highlights
+  ["rq-s","rq-l"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle("factive", !!(el.value));
+  });
+}
+
+function rqf() {
+  _rqFilt.s  = (document.getElementById("rq-s")?.value || "").toLowerCase();
+  _rqFilt.lv = document.getElementById("rq-l")?.value || "";
+  renderRQDynamic(getFilteredRQ());
+}
+
+function clearRQFilters() {
+  _rqFilt = { s:"", lv:"" };
+  ["rq-s","rq-l"].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e) { e.value=""; e.classList.remove("factive"); }
+  });
+  renderRQDynamic(getFilteredRQ());
 }
 </script>
 </body>

@@ -6,27 +6,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Outfit:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/shared.css">
 <style>
-.lcard{background:var(--white);border:0.5px solid var(--brd);border-radius:16px;padding:36px;width:340px;text-align:center;}
-.lnm{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:400;color:var(--teal);letter-spacing:.06em;margin-bottom:3px;}
-.lsb{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);}
-.lro{display:flex;gap:5px;margin:18px 0 12px;justify-content:center;}
-.rb{font-size:11px;padding:5px 12px;border-radius:18px;border:0.5px solid var(--brd);cursor:pointer;background:transparent;color:var(--ink3);font-family:'Outfit',sans-serif;}
-.rb.on{background:var(--teal);color:#fff;border-color:var(--teal);}
-.lpd{display:flex;gap:7px;justify-content:center;margin:12px 0 16px;}
-.dot{width:12px;height:12px;border-radius:50%;background:var(--cream);border:1.5px solid var(--brd);transition:all .15s;}
-.dot.f{background:var(--teal);border-color:var(--teal);}
-.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
-.pk{background:var(--cream);border:0.5px solid var(--brd);border-radius:9px;padding:12px;font-size:18px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .1s;color:var(--ink);}
-.pk:hover{background:var(--tl);border-color:var(--teal);}.pk:active{transform:scale(.96);}
-.lerr{font-size:12px;color:var(--red);height:18px;margin-bottom:4px;}
-.lhint{font-size:10px;color:var(--ink3);}
 #app{display:none;flex:1;flex-direction:row;overflow:hidden;width:100%;}
+.factive{border-color:var(--teal2)!important;background:var(--tl)!important;}
+.clr-btn{font-size:11px;font-family:'DM Mono',monospace;color:var(--teal2);background:var(--tl);border:0.5px solid var(--teal2);border-radius:6px;padding:5px 12px;cursor:pointer;white-space:nowrap;}
+.clr-btn:hover{background:var(--teal2);color:#fff;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="../shared/shared.js"></script>
 </head>
 <body>
-
 <div id="app">
   <aside class="sb">
     <div class="sbb"><div class="sbn"><span class="ld"></span>Sharada</div><div class="sbs">Reports Board</div></div>
@@ -37,85 +25,285 @@
   <div class="main" id="bm"></div>
 </div>
 <script>
-window._boardId="reports";
-document.addEventListener("DOMContentLoaded",()=>{
-  initBoard();
-});
-function initBoard(){ render(); setInterval(render,45000); }
+window._boardId = "reports";
+let _allReps = [];
+let _rfilt = { s:"", st:"", test:"", doc:"" };
 
-function render(){
-  const el=document.getElementById("bm");
-  const pending=R(2,8),approved=R(22,46),delayed=R(0,3);
-  const avgTAT=(2.6+Math.random()*1.6).toFixed(1),tatC=R(78,96),abnCnt=R(3,12);
-  const mkR=s=>({id:`SD-${R(10000,99999)}`,name:NAMES[R(0,NAMES.length-1)],age:R(18,72),
-    test:TESTS[R(0,TESTS.length-1)],doctor:DOCS[R(0,DOCS.length-1)],
-    collected:`${R(7,16)}:${String(R(0,59)).padStart(2,"0")}`,
-    tat:(2.2+Math.random()*2.4).toFixed(1),status:s,
-    isDelayed:s==="pending"&&R(0,3)===0,abn:R(0,4)===0});
-  const pendList=Array.from({length:pending},()=>mkR("pending"));
-  const delList=Array.from({length:8},()=>mkR("delivered"));
-  const tatByTest=TESTS.slice(0,7).map(t=>({name:t,tat:(2+Math.random()*2.5).toFixed(1)})).sort((a,b)=>b.tat-a.tat);
+document.addEventListener("DOMContentLoaded", () => { initBoard(); });
+function initBoard() { render(); setInterval(render, 45000); }
 
-  el.innerHTML=`
+function genReps() {
+  const total = R(28, 52);
+  const pendCount = R(3, 9);
+  return Array.from({length:total}, (_, i) => {
+    const isPend = i < pendCount;
+    const tat = parseFloat((isPend ? (1.0 + Math.random() * 4.5) : (1.2 + Math.random() * 2.8)).toFixed(1));
+    const status = isPend ? (tat > 4 ? "delayed" : "pending") : "delivered";
+    return {
+      id: `SD-${R(10000,99999)}`,
+      name: NAMES[i % NAMES.length],
+      age: R(18,72), gender: R(0,1)?"M":"F",
+      test: TESTS[R(0,TESTS.length-1)],
+      doctor: DOCS[R(0,DOCS.length-1)],
+      collected: `${R(7,16)}:${String(R(0,59)).padStart(2,"0")}`,
+      tat, status,
+      abn: R(0,4) === 0
+    };
+  });
+}
+
+function getRepFiltered() {
+  return _allReps.filter(r => {
+    const q = _rfilt.s.toLowerCase();
+    const stMatch = !_rfilt.st
+      || (_rfilt.st === "pending"  && r.status === "pending")
+      || (_rfilt.st === "delayed"  && r.status === "delayed")
+      || (_rfilt.st === "delivered"&& r.status === "delivered");
+    return (!q || r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q))
+      && stMatch
+      && (!_rfilt.test || r.test === _rfilt.test)
+      && (!_rfilt.doc  || r.doctor === _rfilt.doc);
+  });
+}
+
+function anyRepFilterActive() {
+  return !!(Object.values(_rfilt).some(v => v));
+}
+
+function render() {
+  _allReps = genReps();
+  window._repYst = R(22, 48);
+
+  const el = document.getElementById("bm");
+  el.innerHTML = `
   <div class="bh">
-    <div><div class="bht">Reports board</div><div class="bhs">TAT tracking, pathologist queue and abnormal alerts</div></div>
-    <div class="bhr"><span class="hbg ${pending>0?"hbw":"hbl"}">${pending} pending approval</span><span class="htm" id="htime"></span></div>
+    <div>
+      <div class="bht">Reports Board</div>
+      <div class="bhs">TAT tracking · Pathologist queue · Abnormal alerts</div>
+    </div>
+    <div class="bhr"><span class="hbg hbd">Demo</span><span class="htm" id="htime"></span></div>
   </div>
+
   <div class="fb">
-    <input type="text" placeholder="Search patient name or ID...">
-    <select><option>All statuses</option><option>Pending</option><option>Delayed (&gt;4h)</option><option>Approved</option><option>Delivered</option></select>
-    <select><option>All tests</option>${TESTS.map(t=>`<option>${t}</option>`).join("")}</select>
-    <select><option>All doctors</option>${DOCS.map(d=>`<option>${d}</option>`).join("")}</select>
-    <div class="fsp"></div><input type="date" value="${today()}">
+    <input type="text" placeholder="Search patient name or ID…" id="rp-s" oninput="repf()">
+    <select id="rp-st" onchange="repf()">
+      <option value="">All statuses</option>
+      <option value="pending">Pending</option>
+      <option value="delayed">Delayed (&gt;4h)</option>
+      <option value="delivered">Delivered</option>
+    </select>
+    <select id="rp-test" onchange="repf()">
+      <option value="">All tests</option>
+      ${TESTS.map(t=>`<option>${t}</option>`).join("")}
+    </select>
+    <select id="rp-doc" onchange="repf()">
+      <option value="">All doctors</option>
+      ${DOCS.map(d=>`<option>${d}</option>`).join("")}
+    </select>
+    <div class="fsp"></div>
+    <button class="clr-btn" onclick="clearRepFilters()">Clear filters</button>
   </div>
-  <div class="cband">
-    <span><strong>${pending}</strong> awaiting pathologist</span><span class="ctx-sep">·</span>
-    <span>Avg TAT <strong>${avgTAT}h</strong></span><span class="ctx-sep">·</span>
-    <span>Compliance <strong>${tatC}%</strong></span><span class="ctx-sep">·</span>
-    <span><strong>${abnCnt}</strong> abnormal flagged · <strong>${approved}</strong> approved today</span>
-  </div>
+
+  <div id="rp-cband" class="cband"></div>
+
   <div class="bb">
-    <div class="krow k3" style="margin-bottom:12px">
-      ${kpi("Pending approval",pending,"awaiting pathologist sign-off",pending>5?"wn":pending>0?"fl":"ok",pending>5?"Action needed":pending>0?"→ in queue":"✓ All clear","am",{color:pending>5?"var(--red)":pending>0?"var(--amb)":"var(--grn)"})}
-      ${kpi("Approved today",approved,"reports signed and delivered","up","↑ "+R(2,8)+" vs yesterday","gn",{color:"var(--grn)"})}
-      ${kpi("Avg turnaround",avgTAT+"h","sample to patient delivery",parseFloat(avgTAT)<4?"ok":"wn",parseFloat(avgTAT)<4?"✓ Under 4h":"→ Approaching limit","tl",{color:parseFloat(avgTAT)<4?"var(--teal)":"var(--amb)"})}
-    </div>
-    <div class="krow k3" style="margin-bottom:16px">
-      ${kpi("TAT compliance",tatC+"%","within 4h target","ok",tatC>=90?"✓ Excellent":tatC>=80?"→ Good":"↓ Needs work","gn",{color:tatC>=90?"var(--grn)":tatC>=80?"var(--teal)":"var(--red)",prog:tatC})}
-      ${kpi("Delayed reports",delayed,">4h still pending",delayed>0?"wn":"ok",delayed===0?"✓ None delayed":"→ Follow up now","rd",{color:delayed>0?"var(--red)":"var(--grn)"})}
-      ${kpi("Abnormal flags",abnCnt,"outside reference range","wn","→ Doctors alerted via WhatsApp","am",{color:"var(--amb)"})}
-    </div>
-    ${abnCnt>0?`
-    <div class="sl">Critical value alerts</div>
-    <div style="margin-bottom:14px">
-      ${Array.from({length:Math.min(abnCnt,3)},()=>mkR("approved")).map(r=>`
-      <div class="ac acr"><div class="ado"></div><div>
-        <div class="att">${r.name} · ${r.test} — value outside reference range</div>
-        <div class="abt">Referred by ${r.doctor} · Doctor alerted via WhatsApp · Patient notified · TAT: ${r.tat}h</div>
-      </div></div>`).join("")}
-    </div>`:""}
+    <div id="rp-kpi1" class="krow k3" style="margin-bottom:12px"></div>
+    <div id="rp-kpi2" class="krow k3" style="margin-bottom:16px"></div>
+    <div id="rp-alerts"></div>
+
     <div class="panel" style="margin-bottom:12px">
-      <div class="ptl">Pathologist approval queue <span class="ptag">oldest first</span></div>
-      <div class="th"><span style="width:85px">Report ID</span><span style="flex:1">Patient</span><span style="width:120px">Test</span><span style="width:110px">Doctor</span><span style="width:70px">Collected</span><span style="width:55px;text-align:right">Wait</span><span style="width:75px;text-align:right">Status</span></div>
-      ${pendList.length?pendList.map(r=>`<div class="tr"><span style="width:85px;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)">${r.id}</span><span style="flex:1"><strong>${r.name}</strong> <span style="font-size:10px;color:var(--ink3)">·${r.age}y</span>${r.abn?' <span class="pill pc">Abnormal</span>':""}</span><span style="width:120px;font-size:11px;color:var(--ink3)">${r.test}</span><span style="width:110px;font-size:10px;color:var(--ink3)">${r.doctor}</span><span style="width:70px;font-family:'DM Mono',monospace;font-size:11px">${r.collected}</span><span style="width:55px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:${r.isDelayed?"var(--red)":"var(--ink3)"}">${r.tat}h</span><span style="width:75px;text-align:right"><span class="pill ${r.isDelayed?"pde":"pp"}">${r.isDelayed?"Delayed":"Pending"}</span></span></div>`).join(""):
-      `<div style="padding:14px 0;color:var(--ink3);font-size:12px;text-align:center">✓ Queue is clear</div>`}
+      <div class="ptl">Pathologist approval queue <span class="ptag" id="rp-pend-cnt"></span></div>
+      <div class="th">
+        <span style="width:85px">Report ID</span><span style="flex:1">Patient</span>
+        <span style="width:120px">Test</span><span style="width:110px">Doctor</span>
+        <span style="width:70px">Collected</span><span style="width:55px;text-align:right">TAT</span>
+        <span style="width:75px;text-align:right">Status</span>
+      </div>
+      <div id="rp-pend-rows"></div>
     </div>
+
     <div class="g2" style="margin-bottom:12px">
-      <div class="panel"><div class="ptl">TAT trend <span class="ptag">this week vs 4h target</span></div><div class="cw t"><canvas id="c-tat"></canvas></div></div>
-      <div class="panel"><div class="ptl">TAT by test type <span class="ptag">avg hours</span></div><div class="cw t"><canvas id="c-tt"></canvas></div></div>
+      <div class="panel">
+        <div class="ptl">TAT trend <span class="ptag">this week vs 4h target</span></div>
+        <div class="cw t"><canvas id="c-tat"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="ptl">TAT by test type <span class="ptag">avg hours</span></div>
+        <div class="cw t"><canvas id="c-tt"></canvas></div>
+      </div>
     </div>
+
     <div class="panel">
-      <div class="ptl">Recently delivered</div>
-      <div class="th"><span style="width:85px">ID</span><span style="flex:1">Patient</span><span style="width:120px">Test</span><span style="width:110px">Doctor</span><span style="width:70px">Time</span><span style="width:55px;text-align:right">TAT</span><span style="width:80px;text-align:right">Status</span></div>
-      ${delList.map(r=>`<div class="tr"><span style="width:85px;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)">${r.id}</span><span style="flex:1"><strong>${r.name}</strong></span><span style="width:120px;font-size:11px;color:var(--ink3)">${r.test}</span><span style="width:110px;font-size:10px;color:var(--ink3)">${r.doctor}</span><span style="width:70px;font-family:'DM Mono',monospace;font-size:11px">${r.collected}</span><span style="width:55px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:${parseFloat(r.tat)<4?"var(--grn)":"var(--amb)"}">${r.tat}h</span><span style="width:80px;text-align:right"><span class="pill pd">Delivered</span></span></div>`).join("")}
+      <div class="ptl">Recently delivered <span class="ptag" id="rp-del-cnt"></span></div>
+      <div class="th">
+        <span style="width:85px">ID</span><span style="flex:1">Patient</span>
+        <span style="width:120px">Test</span><span style="width:110px">Doctor</span>
+        <span style="width:70px">Collected</span><span style="width:55px;text-align:right">TAT</span>
+        <span style="width:80px;text-align:right">Status</span>
+      </div>
+      <div id="rp-del-rows"></div>
     </div>
   </div>`;
 
-  lineChart("c-tat",["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],[
-    {label:"Avg TAT",data:[3.8,4.1,3.6,3.9,3.7,4.2,parseFloat(avgTAT)],borderColor:"#0A5548",backgroundColor:"rgba(10,85,72,.08)",fill:true},
-    {label:"4h target",data:[4,4,4,4,4,4,4],borderColor:"#E24B4A",borderWidth:1.5,borderDash:[4,4],pointRadius:0}
-  ],{yMin:0,yMax:6,yFmt:v=>v+"h"});
-  barChart("c-tt",tatByTest.map(t=>t.name),tatByTest.map(t=>parseFloat(t.tat)),"#C98420",{yFmt:v=>v+"h",yMin:0,yMax:6});
+  // Charts use full unfiltered data
+  const tatByDay = [3.8,4.1,3.6,3.9,3.7,4.2, parseFloat((_allReps.reduce((a,r)=>a+r.tat,0)/_allReps.length).toFixed(1))];
+  lineChart("c-tat", ["Mon","Tue","Wed","Thu","Fri","Sat","Today"], [
+    {label:"Avg TAT", data:tatByDay, borderColor:"#0A5548", backgroundColor:"rgba(10,85,72,.08)", fill:true},
+    {label:"4h target", data:[4,4,4,4,4,4,4], borderColor:"#E24B4A", borderWidth:1.5, borderDash:[4,4], pointRadius:0}
+  ], {yMin:0, yMax:6, yFmt:v=>v+"h"});
+
+  const tatByTest = TESTS.slice(0,7).map(t=>({name:t, tat:(1.8+Math.random()*2.5).toFixed(1)})).sort((a,b)=>b.tat-a.tat);
+  barChart("c-tt", tatByTest.map(t=>t.name), tatByTest.map(t=>parseFloat(t.tat)), "#C98420", {yFmt:v=>v+"h", yMin:0, yMax:6});
+
+  renderRepDynamic(getRepFiltered());
+
+  [["rp-s",_rfilt.s],["rp-st",_rfilt.st],["rp-test",_rfilt.test],["rp-doc",_rfilt.doc]]
+    .forEach(([id,val]) => { if(val) { const e=document.getElementById(id); if(e) e.value=val; } });
+}
+
+function renderRepDynamic(reps) {
+  const total    = reps.length;
+  const allTotal = _allReps.length;
+  const yst      = window._repYst || 35;
+  const isFiltered = anyRepFilterActive();
+
+  const pending   = reps.filter(r => r.status === "pending");
+  const delayed   = reps.filter(r => r.status === "delayed");
+  const delivered = reps.filter(r => r.status === "delivered");
+  const abnReps   = reps.filter(r => r.abn);
+
+  // TAT compliance from actual data
+  const tatCompliant = reps.filter(r => r.tat <= 4);
+  const tatPct = total > 0 ? Math.round(tatCompliant.length / total * 100) : 100;
+  const avgTAT = total > 0
+    ? (reps.reduce((a,r)=>a+r.tat,0)/total).toFixed(1)
+    : "0.0";
+
+  const allDelivered = _allReps.filter(r=>r.status==="delivered").length;
+  const dp = allDelivered - yst;
+
+  // Context band
+  document.getElementById("rp-cband").innerHTML = `
+    <span><strong>${pending.length}</strong> pending · <strong>${delayed.length}</strong> delayed</span>
+    <span class="ctx-sep">·</span>
+    <span>Avg TAT <strong>${avgTAT}h</strong></span>
+    <span class="ctx-sep">·</span>
+    <span>TAT compliance <strong>${tatPct}%</strong></span>
+    <span class="ctx-sep">·</span>
+    <span><strong>${delivered.length}</strong> delivered${isFiltered?` (filtered)`:""}  · <strong>${abnReps.length}</strong> abnormal</span>
+    ${delayed.length>0?`<span class="ctx-sep">·</span><span style="color:var(--red);font-weight:600">⚠ ${delayed.length} over 4h limit</span>`:""}
+    ${isFiltered?`<span class="ctx-sep">·</span><span style="color:var(--blue)">Filters active</span>`:""}`;
+
+  // KPI row 1
+  document.getElementById("rp-kpi1").innerHTML =
+    kpi("Pending approval", pending.length+delayed.length,
+      `${pending.length} pending · ${delayed.length} delayed >4h`,
+      (pending.length+delayed.length)>5?"wn":(pending.length+delayed.length)>0?"fl":"ok",
+      (pending.length+delayed.length)>5?"↓ Action needed":(pending.length+delayed.length)>0?"→ In queue":"✓ All clear","am",
+      {color:(pending.length+delayed.length)>5?"var(--red)":(pending.length+delayed.length)>0?"var(--amb)":"var(--grn)"})
+    + kpi("Delivered today", delivered.length,
+      `${total>0?Math.round(delivered.length/total*100):0}% of ${isFiltered?"shown":"all"} reports`,
+      "up", `${dp>=0?"↑":"↓"} ${Math.abs(dp)} vs yesterday`,"gn",{color:"var(--grn)"})
+    + kpi("Avg turnaround", avgTAT+"h",
+      "sample collection to delivery",
+      parseFloat(avgTAT)<3.5?"up":parseFloat(avgTAT)<4?"ok":"wn",
+      parseFloat(avgTAT)<4?"✓ Under 4h limit":"↓ Approaching limit","tl",
+      {color:parseFloat(avgTAT)<3.5?"var(--teal)":parseFloat(avgTAT)<4?"var(--amb)":"var(--red)"});
+
+  // KPI row 2
+  document.getElementById("rp-kpi2").innerHTML =
+    kpi("TAT compliance", tatPct+"%",
+      `${tatCompliant.length} of ${total} within 4h`,
+      tatPct>=90?"up":tatPct>=80?"ok":"wn",
+      tatPct>=90?"✓ Excellent":tatPct>=80?"→ Good":"↓ Needs attention","gn",
+      {color:tatPct>=90?"var(--grn)":tatPct>=80?"var(--teal)":"var(--red)",prog:tatPct,progColor:tatPct>=90?"#1D9E75":tatPct>=80?"#EF9F27":"#E24B4A"})
+    + kpi("Delayed reports", delayed.length,
+      delayed.length>0?"over 4h — follow up now":"no delays","dn",
+      delayed.length===0?"✓ None delayed":"→ Follow up now","rd",
+      {color:delayed.length>0?"var(--red)":"var(--grn)"})
+    + kpi("Abnormal flags", abnReps.length,
+      abnReps.length>0?"outside reference range — alerted":"all values normal","wn",
+      abnReps.length>0?"→ Doctors notified":"✓ All normal","am",
+      {color:abnReps.length>0?"var(--amb)":"var(--grn)"});
+
+  // Alerts
+  let alertsHtml = "";
+  if (delayed.length > 0) {
+    alertsHtml += `<div class="sl">Delayed reports — over 4h limit</div><div style="margin-bottom:14px">
+      ${delayed.slice(0,3).map(r=>`<div class="ac acr"><div class="ado"></div><div>
+        <div class="att">${r.name} · ${r.test} — TAT ${r.tat}h (limit 4h)</div>
+        <div class="abt">Referred by ${r.doctor} · Collected ${r.collected} · Age ${r.age}y ${r.gender}</div>
+      </div></div>`).join("")}
+      ${delayed.length>3?`<div class="ac acb"><div class="ado"></div><div>
+        <div class="att">+${delayed.length-3} more delayed</div>
+      </div></div>`:""}
+    </div>`;
+  }
+  if (abnReps.length > 0) {
+    alertsHtml += `<div class="sl">Critical value alerts</div><div style="margin-bottom:14px">
+      ${abnReps.slice(0,3).map(r=>`<div class="ac acr"><div class="ado"></div><div>
+        <div class="att">${r.name} · ${r.test} — value outside reference range</div>
+        <div class="abt">Referred by ${r.doctor} · Doctor alerted via WhatsApp · TAT: ${r.tat}h</div>
+      </div></div>`).join("")}
+      ${abnReps.length>3?`<div class="ac acb"><div class="ado"></div><div>
+        <div class="att">+${abnReps.length-3} more abnormal flags</div>
+        <div class="abt">See tables below</div>
+      </div></div>`:""}
+    </div>`;
+  }
+  document.getElementById("rp-alerts").innerHTML = alertsHtml;
+
+  // Pending queue
+  const pendAll = [...delayed, ...pending].sort((a,b) => b.tat - a.tat);
+  document.getElementById("rp-pend-cnt").textContent = pendAll.length ? `${pendAll.length} awaiting` : "queue clear";
+  document.getElementById("rp-pend-rows").innerHTML = pendAll.length
+    ? pendAll.map(r=>`<div class="tr">
+        <span style="width:85px;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)">${r.id}</span>
+        <span style="flex:1"><strong>${r.name}</strong> <span style="font-size:10px;color:var(--ink3)">${r.age}y ${r.gender}</span>${r.abn?' <span class="pill pc">!</span>':""}</span>
+        <span style="width:120px;font-size:11px;color:var(--ink3)">${r.test}</span>
+        <span style="width:110px;font-size:10px;color:var(--ink3)">${r.doctor}</span>
+        <span style="width:70px;font-family:'DM Mono',monospace;font-size:10px">${r.collected}</span>
+        <span style="width:55px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:${r.tat>4?"var(--red)":"var(--ink3)"}">${r.tat}h</span>
+        <span style="width:75px;text-align:right"><span class="pill ${r.status==="delayed"?"pde":"pp"}">${r.status==="delayed"?"Delayed":"Pending"}</span></span>
+      </div>`).join("")
+    : `<div style="padding:14px 0;color:var(--ink3);font-size:12px;text-align:center">✓ Queue is clear${isFiltered?" for this filter":""}</div>`;
+
+  // Delivered table
+  document.getElementById("rp-del-cnt").textContent = `${delivered.length} report${delivered.length!==1?"s":""}`;
+  document.getElementById("rp-del-rows").innerHTML = delivered.length
+    ? delivered.slice(0,10).map(r=>`<div class="tr">
+        <span style="width:85px;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)">${r.id}</span>
+        <span style="flex:1"><strong>${r.name}</strong></span>
+        <span style="width:120px;font-size:11px;color:var(--ink3)">${r.test}</span>
+        <span style="width:110px;font-size:10px;color:var(--ink3)">${r.doctor}</span>
+        <span style="width:70px;font-family:'DM Mono',monospace;font-size:10px">${r.collected}</span>
+        <span style="width:55px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:${r.tat<4?"var(--grn)":"var(--amb)"}">${r.tat}h</span>
+        <span style="width:80px;text-align:right"><span class="pill pd">Delivered</span></span>
+      </div>`).join("")
+    : `<div style="padding:14px 0;color:var(--ink3);font-size:12px;text-align:center">No delivered reports match filters</div>`;
+
+  // Filter highlight
+  ["rp-s","rp-st","rp-test","rp-doc"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle("factive", !!(el.value));
+  });
+}
+
+function repf() {
+  _rfilt.s    = document.getElementById("rp-s")?.value    || "";
+  _rfilt.st   = document.getElementById("rp-st")?.value   || "";
+  _rfilt.test = document.getElementById("rp-test")?.value || "";
+  _rfilt.doc  = document.getElementById("rp-doc")?.value  || "";
+  renderRepDynamic(getRepFiltered());
+}
+
+function clearRepFilters() {
+  _rfilt = { s:"", st:"", test:"", doc:"" };
+  ["rp-s","rp-st","rp-test","rp-doc"].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e) { e.value=""; e.classList.remove("factive"); }
+  });
+  renderRepDynamic(getRepFiltered());
 }
 </script>
 </body>

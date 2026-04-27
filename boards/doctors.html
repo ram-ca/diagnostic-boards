@@ -6,27 +6,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Outfit:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/shared.css">
 <style>
-.lcard{background:var(--white);border:0.5px solid var(--brd);border-radius:16px;padding:36px;width:340px;text-align:center;}
-.lnm{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:400;color:var(--teal);letter-spacing:.06em;margin-bottom:3px;}
-.lsb{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);}
-.lro{display:flex;gap:5px;margin:18px 0 12px;justify-content:center;}
-.rb{font-size:11px;padding:5px 12px;border-radius:18px;border:0.5px solid var(--brd);cursor:pointer;background:transparent;color:var(--ink3);font-family:'Outfit',sans-serif;}
-.rb.on{background:var(--teal);color:#fff;border-color:var(--teal);}
-.lpd{display:flex;gap:7px;justify-content:center;margin:12px 0 16px;}
-.dot{width:12px;height:12px;border-radius:50%;background:var(--cream);border:1.5px solid var(--brd);transition:all .15s;}
-.dot.f{background:var(--teal);border-color:var(--teal);}
-.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
-.pk{background:var(--cream);border:0.5px solid var(--brd);border-radius:9px;padding:12px;font-size:18px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .1s;color:var(--ink);}
-.pk:hover{background:var(--tl);border-color:var(--teal);}.pk:active{transform:scale(.96);}
-.lerr{font-size:12px;color:var(--red);height:18px;margin-bottom:4px;}
-.lhint{font-size:10px;color:var(--ink3);}
 #app{display:none;flex:1;flex-direction:row;overflow:hidden;width:100%;}
+.factive{border-color:var(--teal2)!important;background:var(--tl)!important;}
+.clr-btn{font-size:11px;font-family:'DM Mono',monospace;color:var(--teal2);background:var(--tl);border:0.5px solid var(--teal2);border-radius:6px;padding:5px 12px;cursor:pointer;white-space:nowrap;}
+.clr-btn:hover{background:var(--teal2);color:#fff;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="../shared/shared.js"></script>
 </head>
 <body>
-
 <div id="app">
   <aside class="sb">
     <div class="sbb"><div class="sbn"><span class="ld"></span>Sharada</div><div class="sbs">Doctor Board</div></div>
@@ -37,111 +25,253 @@
   <div class="main" id="bm"></div>
 </div>
 <script>
-window._boardId="doctors";
-let _dp="week";
-document.addEventListener("DOMContentLoaded",()=>{
-  initBoard();
-});
-function initBoard(){ render(); setInterval(render,60000); }
+window._boardId = "doctors";
+let _dp = "week";
+let _allDocs = [];
+let _dfilt = { s:"", sp:"", tr:"" };
 
-const DOCTOR_LIST=[
-  {name:"Dr Ravi Shankar",spec:"General Physician",base:18,trend:"up",wks:[14,16,18,20,22,19,21,24],ph:"+91 98712 34561",init:"RS"},
-  {name:"Dr Priya Reddy",spec:"Gynaecologist",base:14,trend:"up",wks:[10,12,14,15,16,14,16,18],ph:"+91 98712 34562",init:"PR"},
-  {name:"Dr Suresh Nair",spec:"Endocrinologist",base:12,trend:"flat",wks:[11,12,13,12,11,12,12,12],ph:"+91 98712 34563",init:"SN"},
-  {name:"Dr Anitha Rao",spec:"Cardiologist",base:10,trend:"down",wks:[12,11,10,9,8,10,9,7],ph:"+91 98712 34564",init:"AR"},
-  {name:"Dr Kiran Mehta",spec:"General Physician",base:9,trend:"up",wks:[7,8,9,10,9,11,10,12],ph:"+91 98712 34565",init:"KM"},
-  {name:"Dr Meena Lakshmi",spec:"Diabetologist",base:7,trend:"flat",wks:[6,7,8,7,6,8,7,7],ph:"+91 98712 34566",init:"ML"},
-  {name:"Dr Venkat Rao",spec:"General Physician",base:4,trend:"down",wks:[8,7,6,5,4,5,4,3],ph:"+91 98712 34567",init:"VR"},
-  {name:"Dr Santha Kumari",spec:"Paediatrician",base:3,trend:"down",wks:[5,4,3,4,3,2,3,2],ph:"+91 98712 34568",init:"SK"},
-  {name:"Dr Priya Nair",spec:"Dermatologist",base:5,trend:"up",wks:[3,4,5,6,5,7,6,8],ph:"+91 98712 34569",init:"PN"},
-  {name:"Dr Ramesh Gupta",spec:"Orthopaedics",base:4,trend:"flat",wks:[4,5,4,3,5,4,4,5],ph:"+91 98712 34570",init:"RG"},
+const DOCTOR_LIST = [
+  {name:"Dr Ravi Shankar",  spec:"General Physician", base:18, trend:"up",   wks:[14,16,18,20,22,19,21,24], ph:"+91 98712 34561", init:"RS"},
+  {name:"Dr Priya Reddy",   spec:"Gynaecologist",     base:14, trend:"up",   wks:[10,12,14,15,16,14,16,18], ph:"+91 98712 34562", init:"PR"},
+  {name:"Dr Suresh Nair",   spec:"Endocrinologist",   base:12, trend:"flat", wks:[11,12,13,12,11,12,12,12], ph:"+91 98712 34563", init:"SN"},
+  {name:"Dr Anitha Rao",    spec:"Cardiologist",      base:10, trend:"down", wks:[12,11,10,9,8,10,9,7],     ph:"+91 98712 34564", init:"AR"},
+  {name:"Dr Kiran Mehta",   spec:"General Physician", base:9,  trend:"up",   wks:[7,8,9,10,9,11,10,12],     ph:"+91 98712 34565", init:"KM"},
+  {name:"Dr Meena Lakshmi", spec:"Diabetologist",     base:7,  trend:"flat", wks:[6,7,8,7,6,8,7,7],         ph:"+91 98712 34566", init:"ML"},
+  {name:"Dr Venkat Rao",    spec:"General Physician", base:4,  trend:"down", wks:[8,7,6,5,4,5,4,3],         ph:"+91 98712 34567", init:"VR"},
+  {name:"Dr Santha Kumari", spec:"Paediatrician",     base:3,  trend:"down", wks:[5,4,3,4,3,2,3,2],         ph:"+91 98712 34568", init:"SK"},
+  {name:"Dr Priya Nair",    spec:"Dermatologist",     base:5,  trend:"up",   wks:[3,4,5,6,5,7,6,8],         ph:"+91 98712 34569", init:"PN"},
+  {name:"Dr Ramesh Gupta",  spec:"Orthopaedics",      base:4,  trend:"flat", wks:[4,5,4,3,5,4,4,5],         ph:"+91 98712 34570", init:"RG"},
 ];
 
-function render(){
-  const el=document.getElementById("bm");
-  const mult=_dp==="week"?1:4.3;
-  const docs=DOCTOR_LIST.map((d,i)=>{
-    const refs=Math.round(d.base*mult*(0.8+Math.random()*.4));
-    const prev=Math.round(d.base*mult*(0.7+Math.random()*.5));
-    return{...d,rank:i+1,refs,prev,revenue:refs*R(380,560),delta:parseFloat(pct(refs,prev))};
-  });
-  const total=docs.reduce((a,d)=>a+d.refs,0);
-  const totalRev=docs.reduce((a,d)=>a+d.revenue,0);
-  const atRisk=docs.filter(d=>d.trend==="down");
-  const pLabel=_dp==="week"?"This week":"This month";
+document.addEventListener("DOMContentLoaded", () => { initBoard(); });
+function initBoard() { render(); setInterval(render, 60000); }
 
-  el.innerHTML=`
+function getFilteredDocs() {
+  return _allDocs.filter(d => {
+    const q = _dfilt.s.toLowerCase();
+    return (!q || d.name.toLowerCase().includes(q))
+      && (!_dfilt.sp || d.spec === _dfilt.sp)
+      && (!_dfilt.tr || d.trend === _dfilt.tr);
+  });
+}
+
+function anyDocFilterActive() {
+  return !!(_dfilt.s || _dfilt.sp || _dfilt.tr);
+}
+
+function render() {
+  const el = document.getElementById("bm");
+  const mult = _dp === "week" ? 1 : 4.3;
+
+  _allDocs = DOCTOR_LIST.map(d => {
+    const refs = Math.round(d.base * mult * (0.8 + Math.random() * 0.4));
+    const prev = Math.round(d.base * mult * (0.7 + Math.random() * 0.5));
+    return { ...d, refs, prev, revenue: refs * R(380, 560), delta: parseFloat(pct(refs, prev)) };
+  });
+  const pLabel = _dp === "week" ? "This week" : "This month";
+  const specs = [...new Set(DOCTOR_LIST.map(d => d.spec))];
+
+  el.innerHTML = `
   <div class="bh">
-    <div><div class="bht">Doctor board</div><div class="bhs">Referral tracking, weekly trends and visit priority alerts</div></div>
+    <div>
+      <div class="bht">Doctor Board</div>
+      <div class="bhs">Referral tracking · Weekly trends · Visit priority alerts</div>
+    </div>
     <div class="bhr">
       <div class="ptog">
         <button class="ptb ${_dp==="week"?"on":""}" onclick="_dp='week';render()">Week</button>
         <button class="ptb ${_dp==="month"?"on":""}" onclick="_dp='month';render()">Month</button>
       </div>
+      <span class="htm" id="htime"></span>
     </div>
   </div>
+
   <div class="fb">
-    <input type="text" placeholder="Search doctor name..." id="d-s" oninput="df()">
-    <select id="d-sp" onchange="df()"><option value="">All specialities</option>${[...new Set(docs.map(d=>d.spec))].map(s=>`<option value="${s}">${s}</option>`).join("")}</select>
-    <select id="d-tr" onchange="df()"><option value="">All trends</option><option value="up">Increasing ↑</option><option value="flat">Stable →</option><option value="down">Dropping ↓</option></select>
+    <input type="text" placeholder="Search doctor name…" id="d-s" oninput="df()">
+    <select id="d-sp" onchange="df()">
+      <option value="">All specialities</option>
+      ${specs.map(s=>`<option value="${s}">${s}</option>`).join("")}
+    </select>
+    <select id="d-tr" onchange="df()">
+      <option value="">All trends</option>
+      <option value="up">Increasing ↑</option>
+      <option value="flat">Stable →</option>
+      <option value="down">Dropping ↓</option>
+    </select>
+    <div class="fsp"></div>
+    <button class="clr-btn" onclick="clearDocFilters()">Clear filters</button>
   </div>
-  <div class="cband">
-    <span><strong>${total}</strong> referrals ${pLabel.toLowerCase()}</span><span class="ctx-sep">·</span>
-    <span>Revenue <strong>${fK(totalRev)}</strong></span><span class="ctx-sep">·</span>
-    <span><strong>3</strong> new referrers this month</span><span class="ctx-sep">·</span>
-    <span><strong>${atRisk.length}</strong> dropping — visit this week</span>
-  </div>
+
+  <div id="d-cband" class="cband"></div>
+
   <div class="bb">
-    <div class="krow k4" style="margin-bottom:12px">
-      ${kpi("Total referrals",total,pLabel.toLowerCase()+" combined","up","↑ "+R(5,18)+"% vs prev","tl",{color:"var(--teal)"})}
-      ${kpi("Revenue from doctors",fK(totalRev),pLabel.toLowerCase()+" from referrals","up","↑ "+R(4,14)+"%","gn",{color:"var(--grn)"})}
-      ${kpi("Active doctors",docs.filter(d=>d.refs>0).length,"referred at least once","ok","✓ 3 new this month","bl")}
-      ${kpi("At-risk doctors",atRisk.length,"referrals dropping >20%","dn","↓ Visit recommended","rd",{color:atRisk.length?"var(--red)":"var(--grn)"})}
-    </div>
-    <div class="krow k4" style="margin-bottom:16px">
-      ${kpi("Top doctor",docs[0].init,docs[0].refs+" refs · "+docs[0].spec,"up","↑ Strongest","tl")}
-      ${kpi("Avg per doctor",Math.round(total/docs.filter(d=>d.refs>0).length),"referrals per active doctor","fl","→ target 8+/week","")}
-      ${kpi("Specialities covered","6 / 8","of target specialities","ok","→ Add ortho + neuro","bl")}
-      ${kpi("Doctor loyalty",R(72,88)+"%","returning referrers from last month","ok","✓ Good retention","gn")}
-    </div>
-    ${atRisk.length?`
-    <div class="sl">Visit priority — personal visit recommended this week</div>
-    <div style="margin-bottom:14px">${atRisk.map(d=>`<div class="ac aca"><div class="ado"></div><div><div class="att">${d.name} · ${d.spec} — referrals dropping</div><div class="abt">8-week trend: ${d.wks.slice(-4).join("→")}. Down ${Math.abs(d.delta)}% vs previous period. Call or visit personally. ${d.ph}</div></div></div>`).join("")}</div>`:""}
+    <div id="d-kpi1" class="krow k4" style="margin-bottom:12px"></div>
+    <div id="d-kpi2" class="krow k4" style="margin-bottom:16px"></div>
+    <div id="d-alerts"></div>
+
     <div class="g2" style="margin-bottom:12px">
       <div class="panel">
-        <div class="ptl">Referral leaderboard <span class="ptag">${pLabel.toLowerCase()}</span></div>
-        <div class="th"><span style="width:22px">#</span><span style="flex:1">Doctor</span><span style="width:60px;text-align:right">Refs</span><span style="width:80px;text-align:right">Revenue</span><span style="width:55px;text-align:right">Δ prev</span><span style="width:55px;text-align:right">Trend</span></div>
-        <div id="d-rows">
-          ${docs.map((d,i)=>`<div class="tr" data-n="${d.name.toLowerCase()}" data-sp="${d.spec}" data-tr="${d.trend}"><span style="width:22px;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)">${i+1}</span><span style="flex:1;display:flex;align-items:center;gap:6px"><span class="av" style="background:var(--tl);color:var(--teal);width:26px;height:26px;font-size:10px">${d.init}</span><span><strong>${d.name}</strong> <span style="font-size:10px;color:var(--ink3)">${d.spec}</span></span></span><span style="width:60px;text-align:right;font-family:'DM Mono',monospace">${d.refs}</span><span style="width:80px;text-align:right;font-size:11px">${fK(d.revenue)}</span><span style="width:55px;text-align:right;font-size:11px;color:${d.delta>0?"var(--grn)":d.delta<0?"var(--red)":"var(--ink3)"}">${d.delta>0?"+":""}${d.delta}%</span><span style="width:55px;text-align:right;font-size:11px;color:${d.trend==="up"?"var(--grn)":d.trend==="down"?"var(--red)":"var(--ink3)"}">${d.trend==="up"?"↑ up":d.trend==="down"?"↓ dn":"→ flat"}</span></div>`).join("")}
+        <div class="ptl">Referral leaderboard <span class="ptag" id="d-lb-tag">${pLabel.toLowerCase()}</span></div>
+        <div class="th">
+          <span style="width:22px">#</span>
+          <span style="flex:1">Doctor</span>
+          <span style="width:60px;text-align:right">Refs</span>
+          <span style="width:80px;text-align:right">Revenue</span>
+          <span style="width:55px;text-align:right">Δ prev</span>
+          <span style="width:55px;text-align:right">Trend</span>
         </div>
+        <div id="d-rows"></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
-        <div class="panel"><div class="ptl">8-week total referral trend</div><div class="cw"><canvas id="c-t"></canvas></div></div>
-        <div class="panel"><div class="ptl">Revenue by doctor <span class="ptag">top 6</span></div><div class="cw"><canvas id="c-r"></canvas></div></div>
+        <div class="panel">
+          <div class="ptl">8-week total referral trend <span class="ptag">all doctors</span></div>
+          <div class="cw"><canvas id="c-t"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="ptl">Revenue by doctor <span class="ptag">top 6</span></div>
+          <div class="cw"><canvas id="c-r"></canvas></div>
+        </div>
       </div>
     </div>
+
     <div class="panel">
       <div class="ptl">Weekly referrals per doctor <span class="ptag">last 8 weeks</span></div>
       <div class="cw t"><canvas id="c-w"></canvas></div>
     </div>
   </div>`;
 
-  lineChart("c-t",["W1","W2","W3","W4","W5","W6","W7","W8"],[
-    {label:"Total",data:[38,44,41,52,48,56,62,total],borderColor:"#0A5548",backgroundColor:"rgba(10,85,72,.08)",fill:true}
+  // Charts always show full unfiltered data
+  const totalWeekTrend = [38,44,41,52,48,56,62, _allDocs.reduce((a,d)=>a+d.refs,0)];
+  lineChart("c-t", ["W1","W2","W3","W4","W5","W6","W7","W8"], [
+    {label:"Total", data:totalWeekTrend, borderColor:"#0A5548", backgroundColor:"rgba(10,85,72,.08)", fill:true}
   ]);
-  barChart("c-r",docs.slice(0,6).map(d=>d.init),docs.slice(0,6).map(d=>d.revenue),"#136658",{yFmt:v=>"₹"+(v/1000).toFixed(0)+"K"});
+  barChart("c-r", _allDocs.slice(0,6).map(d=>d.init), _allDocs.slice(0,6).map(d=>d.revenue), "#136658", {yFmt:v=>"₹"+(v/1000).toFixed(0)+"K"});
   mkChart("c-w","bar",{
     labels:["W1","W2","W3","W4","W5","W6","W7","W8"],
-    datasets:DOCTOR_LIST.slice(0,5).map((d,i)=>({label:d.init,data:d.wks,backgroundColor:["rgba(10,85,72,.7)","rgba(19,102,88,.6)","rgba(201,132,32,.6)","rgba(24,95,165,.5)","rgba(83,74,183,.5)"][i],borderRadius:2}))
+    datasets:DOCTOR_LIST.slice(0,5).map((d,i)=>({
+      label:d.init, data:d.wks,
+      backgroundColor:["rgba(10,85,72,.7)","rgba(19,102,88,.6)","rgba(201,132,32,.6)","rgba(24,95,165,.5)","rgba(83,74,183,.5)"][i],
+      borderRadius:2
+    }))
   },{legend:{display:true,labels:{font:{size:10},boxWidth:8,padding:6}}});
+
+  renderDocDynamic(getFilteredDocs());
+
+  [["d-s",_dfilt.s],["d-sp",_dfilt.sp],["d-tr",_dfilt.tr]]
+    .forEach(([id,val]) => { if(val) { const e=document.getElementById(id); if(e) e.value=val; } });
 }
-function df(){
-  const s=(document.getElementById("d-s")?.value||"").toLowerCase();
-  const sp=document.getElementById("d-sp")?.value||"";
-  const tr=document.getElementById("d-tr")?.value||"";
-  document.querySelectorAll("#d-rows .tr").forEach(r=>{
-    r.style.display=((!s||(r.dataset.n||"").includes(s))&&(!sp||r.dataset.sp===sp)&&(!tr||r.dataset.tr===tr))?"":"none";
+
+function renderDocDynamic(docs) {
+  const isFiltered = anyDocFilterActive();
+  const allTotal   = _allDocs.reduce((a,d)=>a+d.refs, 0);
+  const total      = docs.reduce((a,d)=>a+d.refs, 0);
+  const totalRev   = docs.reduce((a,d)=>a+d.revenue, 0);
+  const active     = docs.filter(d=>d.refs>0);
+  const atRisk     = docs.filter(d=>d.trend==="down");
+  const growing    = docs.filter(d=>d.trend==="up");
+  const pLabel     = _dp==="week" ? "this week" : "this month";
+
+  const avgRefs   = active.length>0 ? Math.round(total/active.length) : 0;
+  const topDoc    = docs.length>0 ? docs.reduce((a,b)=>a.refs>b.refs?a:b) : null;
+  const revPerRef = total>0 ? Math.round(totalRev/total) : 0;
+
+  // Context band
+  document.getElementById("d-cband").innerHTML = `
+    <span><strong>${total}</strong>${isFiltered?` of ${allTotal}`:""} referrals ${pLabel}</span>
+    <span class="ctx-sep">·</span>
+    <span>Revenue <strong>${fK(totalRev)}</strong></span>
+    <span class="ctx-sep">·</span>
+    <span><strong>${growing.length}</strong> growing · <strong>${atRisk.length}</strong> dropping</span>
+    <span class="ctx-sep">·</span>
+    <span>Avg per visit <strong>${f(revPerRef)}</strong></span>
+    ${atRisk.length>0?`<span class="ctx-sep">·</span><span style="color:var(--red);font-weight:600">⚠ ${atRisk.length} need visit</span>`:""}
+    ${isFiltered?`<span class="ctx-sep">·</span><span style="color:var(--blue)">Filters active</span>`:""}`;
+
+  // KPI row 1
+  document.getElementById("d-kpi1").innerHTML =
+    kpi("Total referrals", total,
+      `${pLabel}${isFiltered?` · filtered`:""}`,
+      total>0?"up":"fl","→ combined","tl",{color:"var(--teal)"})
+    + kpi("Revenue from referrals", fK(totalRev),
+      `${pLabel} · avg ${f(revPerRef)}/referral`,
+      "up","↑ doctor-driven revenue","gn",{color:"var(--grn)"})
+    + kpi("Active doctors", active.length,
+      `referred at least once · ${docs.length} shown`,
+      "ok","✓ engaged referrers","bl")
+    + kpi("At-risk doctors", atRisk.length,
+      "referrals dropping — visit recommended",
+      atRisk.length>0?"dn":"ok",
+      atRisk.length>0?"↓ Personal visit needed":"✓ All stable","rd",
+      {color:atRisk.length>0?"var(--red)":"var(--grn)"});
+
+  // KPI row 2
+  document.getElementById("d-kpi2").innerHTML =
+    (topDoc ? kpi("Top referrer", topDoc.init,
+      `${topDoc.name} · ${topDoc.refs} refs · ${topDoc.spec}`,
+      "up","↑ Lead contributor","tl") : "")
+    + kpi("Avg refs per doctor", avgRefs,
+      `across ${active.length} active doctors`,
+      avgRefs>=8?"ok":"wn",
+      avgRefs>=8?"✓ Healthy average":"→ Target 8+/week","")
+    + kpi("Growing referrers", growing.length,
+      `trending up ${pLabel}`,
+      growing.length>0?"up":"fl",
+      growing.length>0?"↑ Strong momentum":"→ Stable","gn",{color:"var(--grn)"})
+    + kpi("Rev per referral", f(revPerRef),
+      "avg ticket from doctor patients",
+      revPerRef>450?"up":"fl",
+      revPerRef>450?"↑ Above target":"→ Can improve","bl");
+
+  // Alerts
+  let alertsHtml = "";
+  if (atRisk.length > 0) {
+    alertsHtml = `<div class="sl">Visit priority — personal visit recommended${isFiltered?" (filtered)":""}</div>
+    <div style="margin-bottom:14px">
+      ${atRisk.map(d=>`<div class="ac aca"><div class="ado"></div><div>
+        <div class="att">${d.name} · ${d.spec} — referrals dropping</div>
+        <div class="abt">8-week trend: ${d.wks.slice(-4).join(" → ")} · Down ${Math.abs(d.delta)}% vs previous · ${d.ph}</div>
+      </div></div>`).join("")}
+    </div>`;
+  }
+  document.getElementById("d-alerts").innerHTML = alertsHtml;
+
+  // Leaderboard
+  document.getElementById("d-lb-tag").textContent = isFiltered ? `filtered · ${docs.length} doctors` : pLabel;
+  document.getElementById("d-rows").innerHTML = docs.length
+    ? docs.map((d,i)=>`<div class="tr">
+        <span style="width:22px;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)">${i+1}</span>
+        <span style="flex:1;display:flex;align-items:center;gap:6px">
+          <span class="av" style="background:var(--tl);color:var(--teal);width:26px;height:26px;font-size:10px">${d.init}</span>
+          <span><strong>${d.name}</strong> <span style="font-size:10px;color:var(--ink3)">${d.spec}</span></span>
+        </span>
+        <span style="width:60px;text-align:right;font-family:'DM Mono',monospace">${d.refs}</span>
+        <span style="width:80px;text-align:right;font-size:11px">${fK(d.revenue)}</span>
+        <span style="width:55px;text-align:right;font-size:11px;color:${d.delta>0?"var(--grn)":d.delta<0?"var(--red)":"var(--ink3)"}">${d.delta>0?"+":""}${d.delta}%</span>
+        <span style="width:55px;text-align:right;font-size:11px;color:${d.trend==="up"?"var(--grn)":d.trend==="down"?"var(--red)":"var(--ink3)"}">${d.trend==="up"?"↑ up":d.trend==="down"?"↓ dn":"→ flat"}</span>
+      </div>`).join("")
+    : `<div style="padding:14px 0;color:var(--ink3);font-size:12px;text-align:center">No doctors match current filters</div>`;
+
+  // Filter highlights
+  ["d-s","d-sp","d-tr"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle("factive", !!(el.value));
   });
+}
+
+function df() {
+  _dfilt.s  = document.getElementById("d-s")?.value  || "";
+  _dfilt.sp = document.getElementById("d-sp")?.value || "";
+  _dfilt.tr = document.getElementById("d-tr")?.value || "";
+  renderDocDynamic(getFilteredDocs());
+}
+
+function clearDocFilters() {
+  _dfilt = { s:"", sp:"", tr:"" };
+  ["d-s","d-sp","d-tr"].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e) { e.value=""; e.classList.remove("factive"); }
+  });
+  renderDocDynamic(getFilteredDocs());
 }
 </script>
 </body>

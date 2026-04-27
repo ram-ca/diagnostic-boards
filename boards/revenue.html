@@ -11,6 +11,8 @@
 .doc-row:last-child{border-bottom:none;}
 .doc-bar-wrap{flex:1;background:var(--cream);border-radius:3px;height:5px;overflow:hidden;}
 .doc-bar{height:100%;border-radius:3px;}
+.factive{border-color:var(--teal2)!important;background:var(--tl)!important;}
+.cat-total{margin-top:10px;padding:8px 12px;background:var(--tl);border-radius:6px;font-size:11px;color:var(--teal);display:flex;justify-content:space-between;align-items:center;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="../shared/shared.js"></script>
@@ -68,6 +70,7 @@ function render(){
   const variable=Math.round(base*0.25);
   const profit=base-variable-fixedShare;
   const margin=Math.round(profit/base*100);
+  const costPerPt=Math.round((variable+fixedShare)/Math.max(patients,1));
 
   const monthSoFar=R(460000,670000);
   const tgtPct=Math.round(monthSoFar/MONTHLY_TARGET*100);
@@ -85,17 +88,25 @@ function render(){
   const prevTrend=trendData.map(v=>Math.max(0,v+R(-5000,5000)));
 
   const testRevenue=[
-    {t:"Vitamin D",v:R(38000,58000)},{t:"CBC",v:R(28000,44000)},
-    {t:"TSH",v:R(22000,36000)},{t:"USG Abdomen",v:R(20000,35000)},
-    {t:"Lipid Profile",v:R(18000,30000)},{t:"HbA1c",v:R(15000,26000)},
-    {t:"LFT",v:R(12000,22000)},{t:"X-Ray Chest",v:R(10000,18000)}
+    {t:"Vitamin D",   cat:"Hormone",     v:R(38000,58000)},
+    {t:"CBC",         cat:"Haematology", v:R(28000,44000)},
+    {t:"TSH",         cat:"Hormone",     v:R(22000,36000)},
+    {t:"USG Abdomen", cat:"Radiology",   v:R(20000,35000)},
+    {t:"Lipid Profile",cat:"Biochemistry",v:R(18000,30000)},
+    {t:"HbA1c",       cat:"Hormone",     v:R(15000,26000)},
+    {t:"LFT",         cat:"Biochemistry",v:R(12000,22000)},
+    {t:"X-Ray Chest", cat:"Radiology",   v:R(10000,18000)},
+    {t:"Blood Sugar",  cat:"Biochemistry",v:R(8000,16000)},
+    {t:"Dengue NS1",  cat:"Microbiology",v:R(6000,12000)}
   ].sort((a,b)=>b.v-a.v);
   const maxTestRev=testRevenue[0].v;
+  const totalTestRev=testRevenue.reduce((a,t)=>a+t.v,0);
 
   const docRevenue=DOCS.filter(d=>d!=="Walk-in").map(d=>({
     name:d.replace("Dr ",""),v:R(28000,98000),pts:R(9,30)
   })).sort((a,b)=>b.v-a.v);
   const maxDocRev=Math.max(...docRevenue.map(d=>d.v),1);
+  const totalDocRev=docRevenue.reduce((a,d)=>a+d.v,0);
 
   el.innerHTML=`
   <div class="bh">
@@ -128,10 +139,10 @@ function render(){
       <option value="digital">Digital only</option>
     </select>
     <div class="fsp"></div>
-    ${_p==="today"?`<input type="date" value="${today()}">`:`<span style="font-size:11px;color:var(--ink3)">${pLabel}</span>`}
+    ${_p==="today"?`<input type="date" value="${today()}" readonly style="cursor:default">`:`<span style="font-size:11px;color:var(--ink3)">${pLabel}</span>`}
   </div>
 
-  <div class="cband">
+  <div class="cband" id="rv-cband">
     <span><strong>${fK(base)}</strong> ${pLabel.toLowerCase()}</span><span class="ctx-sep">·</span>
     <span>${dp>0?"↑":"↓"}<strong>${Math.abs(dp)}%</strong> vs previous</span><span class="ctx-sep">·</span>
     <span>Avg ticket <strong>${f(avgTicket)}</strong></span><span class="ctx-sep">·</span>
@@ -153,28 +164,28 @@ function render(){
         `per patient · ${patients} visits`,
         avgTicket>550?"up":"fl",avgTicket>550?"↑ Good":"→ Can improve","bl")}
       ${kpi("Monthly target",tgtPct+"%",
-        `${fK(monthSoFar)} of ₹${fK(MONTHLY_TARGET)} · ${daysLeft} days left`,
+        `${fK(monthSoFar)} of ${fK(MONTHLY_TARGET)} · ${daysLeft} days left`,
         tgtPct>=70?"ok":"wn",tgtPct>=70?"On track":"Needs push","tl",
         {color:tgtPct>=70?"var(--teal)":"var(--amb)",prog:Math.min(tgtPct,100)})}
     </div>
 
     <div id="rv-kpi2" class="krow k4" style="margin-bottom:16px">
       ${kpi("Cash collected",fK(cash),
-        `${cashPct}% of total · physical float`,
-        "fl","→ reconcile daily","am")}
+        `${cashPct}% of ${pLabel.toLowerCase()} · reconcile daily`,
+        "fl","→ physical float","am")}
       ${kpi("UPI / Digital",fK(upi+card),
-        `${upiPct+cardPct}% of total · auto-reconciled`,
+        `${upiPct+cardPct}% of ${pLabel.toLowerCase()} · auto-reconciled`,
         "up","↑ preferred mode","bl")}
       ${kpi("Daily run rate",fK(runRate),
-        `target ${fK(DAILY_TARGET)}/day`,
+        `target ${fK(DAILY_TARGET)}/day · ${runRatePct}% of daily target`,
         runRatePct>=100?"up":"wn",
         runRatePct>=100?"↑ Ahead of pace":"↓ Below required","gn",
         {color:runRatePct>=100?"var(--grn)":"var(--red)",prog:Math.min(runRatePct,100),progColor:runRatePct>=100?"#1D9E75":"#E24B4A"})}
-      ${kpi("Need to hit target",fK(needed)+"/day",
-        `${daysLeft} days left · ${fK(MONTHLY_TARGET-monthSoFar)} remaining`,
-        needed<=DAILY_TARGET?"ok":"wn",
-        needed<=DAILY_TARGET?"Achievable":"Stretch target","rd",
-        {color:needed<=DAILY_TARGET?"var(--grn)":"var(--amb)"})}
+      ${kpi("Cost per patient",f(costPerPt),
+        `variable + fixed share · ${patients} patients`,
+        costPerPt<avgTicket?"up":"wn",
+        costPerPt<avgTicket?"↑ Margin positive":"↓ Below cost","rd",
+        {color:costPerPt<avgTicket?"var(--grn)":"var(--red)"})}
     </div>
 
     <div class="panel" style="margin-bottom:12px">
@@ -197,18 +208,22 @@ function render(){
         <div class="fr total"><span style="font-weight:600">Net profit</span><span class="fv" style="color:${profit>0?"var(--grn)":"var(--red)"};font-size:15px">${profit>=0?"+":""}${fK(profit)}</span></div>
         <div class="fr" style="border-top:none"><span style="color:var(--ink3)">Profit margin</span><span class="fv" style="color:${margin>20?"var(--grn)":margin>10?"var(--amb)":"var(--red)"}">${margin}%</span></div>
         <div class="fr"><span style="color:var(--ink3)">Break-even revenue</span><span class="fv">${fK(Math.round(fixedShare/0.75))}</span></div>
+        <div class="fr"><span style="color:var(--ink3)">Cost per patient</span><span class="fv">${f(costPerPt)}</span></div>
       </div>
 
       <div class="panel" id="rv-tests-panel">
-        <div class="ptl">Top tests by revenue <span class="ptag" id="rv-tests-tag">this month</span></div>
+        <div class="ptl">Top tests by revenue <span class="ptag" id="rv-tests-tag">all categories</span></div>
         ${testRevenue.map((t,i)=>`
         <div class="pbl">
           <div class="pbl-top">
-            <span>${t.t}</span>
+            <span>${t.t} <span style="font-size:9px;color:var(--ink3)">${t.cat}</span></span>
             <span style="font-weight:500;color:var(--teal)">${fK(t.v)}</span>
           </div>
           <div class="prog"><div class="progf" style="width:${Math.round(t.v/maxTestRev*100)}%;background:${i===0?"var(--teal)":i===1?"var(--teal2)":i===2?"var(--g2)":"#C8C4B8"}"></div></div>
         </div>`).join("")}
+        <div class="fr" style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--brd)">
+          <span style="color:var(--ink3)">Total tracked</span><span class="fv">${fK(totalTestRev)}</span>
+        </div>
       </div>
 
       <div class="panel">
@@ -220,15 +235,16 @@ function render(){
           <span style="font-size:11px;font-family:'DM Mono',monospace;min-width:50px;text-align:right">${fK(d.v)}</span>
         </div>`).join("")}
         <div style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--brd)">
-          <div class="fr"><span style="color:var(--ink3)">Avg per doctor</span><span class="fv">${fK(Math.round(docRevenue.reduce((a,d)=>a+d.v,0)/docRevenue.length))}</span></div>
-          <div class="fr"><span style="color:var(--ink3)">Top doctor share</span><span class="fv">${Math.round(docRevenue[0].v/docRevenue.reduce((a,d)=>a+d.v,0)*100)}% of total</span></div>
+          <div class="fr"><span style="color:var(--ink3)">Avg per doctor</span><span class="fv">${fK(Math.round(totalDocRev/docRevenue.length))}</span></div>
+          <div class="fr"><span style="color:var(--ink3)">Top doctor share</span><span class="fv">${Math.round(docRevenue[0].v/totalDocRev*100)}% of total</span></div>
+          <div class="fr"><span style="color:var(--ink3)">Avg per referral</span><span class="fv">${f(Math.round(totalDocRev/docRevenue.reduce((a,d)=>a+d.pts,0)))}</span></div>
         </div>
       </div>
     </div>
 
     <div class="g3">
       <div class="panel" id="rv-pay-panel">
-        <div class="ptl">Payment mode split <span class="ptag" id="rv-pay-tag"></span></div>
+        <div class="ptl">Payment mode split <span class="ptag" id="rv-pay-tag">${pLabel.toLowerCase()}</span></div>
         <div class="cw s"><canvas id="c-pay"></canvas></div>
         <div id="rv-pay-bars" style="margin-top:10px">
           ${[{l:"Cash",v:cash,p:cashPct,c:"var(--teal)"},{l:"UPI",v:upi,p:upiPct,c:"var(--g2)"},{l:"Card",v:card,p:cardPct,c:"var(--blue)"}].map(x=>`
@@ -245,7 +261,7 @@ function render(){
       <div class="panel">
         <div class="ptl">Monthly milestones</div>
         ${[
-          {l:"Revenue target",v:tgtPct,t:`₹${fK(MONTHLY_TARGET)}`,c:"var(--teal2)"},
+          {l:"Revenue target",v:tgtPct,t:`${fK(MONTHLY_TARGET)}`,c:"var(--teal2)"},
           {l:"Profit target",v:R(40,78),t:"₹3L net",c:"var(--grn)"},
           {l:"Patients/day",v:Math.round(R(38,62)/PATIENT_TARGET*100),t:`${PATIENT_TARGET}/day`,c:"var(--blue)"},
           {l:"TAT compliance",v:R(78,96),t:"≥90%",c:"var(--g2)"}
@@ -261,6 +277,7 @@ function render(){
           <div class="fr"><span>Collected so far</span><span class="fv ft">${fK(monthSoFar)}</span></div>
           <div class="fr"><span>Remaining target</span><span class="fv" style="color:var(--ink3)">${fK(MONTHLY_TARGET-monthSoFar)}</span></div>
           <div class="fr"><span>Required per day</span><span class="fv" style="color:${needed<=DAILY_TARGET?"var(--grn)":"var(--red)"}">${fK(needed)}/day</span></div>
+          <div class="fr"><span>Break-even daily</span><span class="fv">${fK(Math.round(fixedShare/0.75/30))}/day</span></div>
         </div>
       </div>
 
@@ -272,6 +289,7 @@ function render(){
           <div class="fr"><span>${k}</span><span class="fv">${fK(v)}</span></div>`).join("")}
           <div class="fr total"><span style="font-weight:600">Total fixed/month</span><span class="fv" style="color:var(--red)">−${fK(totalFixed)}</span></div>
           <div class="fr" style="border-top:none"><span style="color:var(--ink3)">Fixed as % of target</span><span class="fv">${Math.round(totalFixed/MONTHLY_TARGET*100)}%</span></div>
+          <div class="fr" style="border-top:none"><span style="color:var(--ink3)">Fixed per patient</span><span class="fv">${f(Math.round(totalFixed/PATIENT_TARGET/26))}</span></div>
         </div>
       </div>
     </div>
@@ -284,37 +302,43 @@ function render(){
   doughnut("c-pay",["Cash","UPI","Card"],[cash,upi,card],["#0A5548","#C98420","#185FA5"]);
   barChart("c-cost",Object.keys(COSTS),Object.values(COSTS),"#C98420",{yFmt:v=>"₹"+(v/1000).toFixed(0)+"K"});
 
-  // Store for filter updates
-  window._rvData = { testRevenue, cash, upi, card, cashPct, upiPct, cardPct };
+  // Store all computed values for filter updates
+  window._rvData = {
+    testRevenue, cash, upi, card, cashPct, upiPct, cardPct,
+    base, dp, avgTicket, margin, tgtPct, daysLeft, patients, pLabel,
+    totalTestRev
+  };
 
-  // Re-apply active filters and restore select UI state after innerHTML rebuild
+  // Re-apply active filters and restore select UI state
   if (_catFilter || _payFilter) renderFiltered();
-  if (_catFilter) { const e=document.getElementById("rv-cat"); if(e) e.value=_catFilter; }
-  if (_payFilter) { const e=document.getElementById("rv-pay"); if(e) e.value=_payFilter; }
+  if (_catFilter) { const e=document.getElementById("rv-cat"); if(e) { e.value=_catFilter; e.classList.add("factive"); } }
+  if (_payFilter) { const e=document.getElementById("rv-pay"); if(e) { e.value=_payFilter; e.classList.add("factive"); } }
 }
 
 function renderFiltered() {
   const d = window._rvData;
   if (!d) return;
 
-  // Test category filter — updates the test revenue panel
-  const testsEl = document.getElementById("rv-tests-panel");
+  // ── Test category filter ─────────────────────────────────────
+  const testsEl  = document.getElementById("rv-tests-panel");
   const testsTag = document.getElementById("rv-tests-tag");
   if (testsEl && testsTag) {
     const allowedTests = _catFilter ? (CAT_MAP[_catFilter] || []) : null;
     const filtered = allowedTests
       ? d.testRevenue.filter(t => allowedTests.some(a => t.t.toLowerCase().includes(a.toLowerCase())))
       : d.testRevenue;
-    const maxV = filtered.length ? filtered[0].v : 1;
-    testsTag.textContent = _catFilter ? _catFilter : "this month";
+    const maxV      = filtered.length ? filtered[0].v : 1;
+    const catTotal  = filtered.reduce((a,t) => a+t.v, 0);
+    const catShare  = d.totalTestRev > 0 ? Math.round(catTotal/d.totalTestRev*100) : 0;
 
-    const barsEl = testsEl.querySelector(".pbl") ? testsEl : testsEl;
-    // Replace bars content (keep the header div)
+    testsTag.textContent = _catFilter ? _catFilter : "all categories";
+
     const header = testsEl.querySelector(".ptl");
     testsEl.innerHTML = "";
     testsEl.appendChild(header);
+
     if (filtered.length === 0) {
-      testsEl.innerHTML += `<div style="padding:16px;text-align:center;font-size:12px;color:var(--ink3)">No tests in this category</div>`;
+      testsEl.innerHTML += `<div style="padding:16px;text-align:center;font-size:12px;color:var(--ink3)">No tests tracked in this category</div>`;
     } else {
       filtered.forEach((t,i) => {
         testsEl.innerHTML += `
@@ -324,48 +348,96 @@ function renderFiltered() {
         </div>`;
       });
     }
+
+    // Category total row
+    if (_catFilter) {
+      testsEl.innerHTML += `<div class="cat-total">
+        <span>${_catFilter} total</span>
+        <strong>${fK(catTotal)} · ${catShare}% of all tests</strong>
+      </div>`;
+    } else {
+      testsEl.innerHTML += `<div class="fr" style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--brd)">
+        <span style="color:var(--ink3)">Total tracked</span><span class="fv">${fK(d.totalTestRev)}</span>
+      </div>`;
+    }
   }
 
-  // Payment filter — updates KPI row 2 and payment bars
-  const kpi2 = document.getElementById("rv-kpi2");
+  // ── Payment filter ───────────────────────────────────────────
+  const kpi2   = document.getElementById("rv-kpi2");
   const payBars = document.getElementById("rv-pay-bars");
-  const payTag = document.getElementById("rv-pay-tag");
+  const payTag  = document.getElementById("rv-pay-tag");
+  const cband   = document.getElementById("rv-cband");
+
   if (kpi2 && payBars) {
-    const cashV  = _payFilter==="digital" ? 0 : d.cash;
-    const digitalV = _payFilter==="cash"  ? 0 : d.upi + d.card;
-    const totalV = cashV + digitalV;
-    const cPct = totalV>0?Math.round(cashV/totalV*100):0;
-    const dPct = totalV>0?Math.round(digitalV/totalV*100):0;
+    const cashV    = _payFilter==="digital" ? 0 : d.cash;
+    const digitalV = _payFilter==="cash"    ? 0 : d.upi + d.card;
+    const totalV   = cashV + digitalV;
+    const cPct = totalV>0 ? Math.round(cashV/totalV*100)    : 0;
+    const dPct = totalV>0 ? Math.round(digitalV/totalV*100) : 0;
 
-    if (payTag) payTag.textContent = _payFilter==="cash"?"Cash only":_payFilter==="digital"?"Digital only":"";
+    if (payTag) payTag.textContent = _payFilter==="cash"?"Cash only":_payFilter==="digital"?"Digital only":d.pLabel.toLowerCase();
 
-    // Update cash/UPI KPI cards only (first 2 in row 2)
+    // Update KPI row 2 — values + subtitles for cash/digital cards
     const cards = kpi2.querySelectorAll(".kc");
-    if (cards[0]) cards[0].querySelector(".kv").textContent = fK(cashV);
-    if (cards[1]) cards[1].querySelector(".kv").textContent = fK(digitalV);
+    if (cards[0]) {
+      cards[0].querySelector(".kv").textContent = fK(cashV);
+      cards[0].querySelector(".ks").textContent = _payFilter
+        ? `${_payFilter==="digital"?"0":"100"}% shown · physical float`
+        : `${d.cashPct}% of ${d.pLabel.toLowerCase()} · reconcile daily`;
+    }
+    if (cards[1]) {
+      cards[1].querySelector(".kv").textContent = fK(digitalV);
+      cards[1].querySelector(".ks").textContent = _payFilter
+        ? `${_payFilter==="cash"?"0":"100"}% shown · auto-reconciled`
+        : `${d.upiPct + d.cardPct}% of ${d.pLabel.toLowerCase()} · auto-reconciled`;
+    }
 
+    // Update payment bars
     payBars.innerHTML = [
-      {l:"Cash",  v:cashV,   p:cPct, c:"var(--teal)"},
-      {l:"Digital",v:digitalV,p:dPct, c:"var(--g2)"}
-    ].filter(x=>!(_payFilter==="digital"&&x.l==="Cash"||_payFilter==="cash"&&x.l==="Digital")).map(x=>`
+      {l:"Cash",    v:cashV,    p:cPct, c:"var(--teal)"},
+      {l:"Digital", v:digitalV, p:dPct, c:"var(--g2)"}
+    ].filter(x => !(_payFilter==="digital"&&x.l==="Cash" || _payFilter==="cash"&&x.l==="Digital")).map(x=>`
       <div class="pbl">
         <div class="pbl-top"><span>${x.l}</span><span>${fK(x.v)} (${x.p}%)</span></div>
         <div class="prog"><div class="progf" style="width:${x.p}%;background:${x.c}"></div></div>
       </div>`).join("")
       + `<div style="margin-top:8px;font-size:10px;color:var(--ink3)">
-          ${_payFilter?"Filter active":"↑ Digital leads · healthy trend"}
+          ${_payFilter?"Payment filter active — showing partial view":"↑ Digital leads · healthy trend"}
         </div>`;
 
-    // Redraw payment doughnut to match the filter
+    // Redraw payment doughnut
     doughnut("c-pay",["Cash","UPI","Card"],
       [_payFilter==="digital"?0:d.cash, _payFilter==="cash"?0:d.upi, _payFilter==="cash"?0:d.card],
       ["#0A5548","#C98420","#185FA5"]);
+
+    // Update context band when payment filter active
+    if (cband) {
+      const filtAmt = _payFilter==="cash" ? d.cash : _payFilter==="digital" ? d.upi+d.card : d.base;
+      const filtShare = Math.round(filtAmt/d.base*100);
+      cband.innerHTML = _payFilter ? `
+        <span><strong>${fK(filtAmt)}</strong> ${_payFilter} · ${filtShare}% of ${fK(d.base)} total</span>
+        <span class="ctx-sep">·</span>
+        <span>Avg ticket <strong>${f(d.avgTicket)}</strong></span>
+        <span class="ctx-sep">·</span>
+        <span>Margin <strong>${d.margin>0?d.margin+"% profit":Math.abs(d.margin)+"% loss"}</strong></span>
+        <span class="ctx-sep">·</span>
+        <span>Monthly <strong>${d.tgtPct}%</strong> · <strong>${d.daysLeft}</strong> days left</span>
+        <span class="ctx-sep">·</span>
+        <span style="color:var(--blue)">Payment filter active</span>
+      ` : `
+        <span><strong>${fK(d.base)}</strong> ${d.pLabel.toLowerCase()}</span><span class="ctx-sep">·</span>
+        <span>${d.dp>0?"↑":"↓"}<strong>${Math.abs(d.dp)}%</strong> vs previous</span><span class="ctx-sep">·</span>
+        <span>Avg ticket <strong>${f(d.avgTicket)}</strong></span><span class="ctx-sep">·</span>
+        <span>Margin <strong>${d.margin>0?d.margin+"% profit":Math.abs(d.margin)+"% loss"}</strong></span><span class="ctx-sep">·</span>
+        <span>Monthly <strong>${d.tgtPct}%</strong> · <strong>${d.daysLeft}</strong> days left</span>
+      `;
+    }
   }
 
-  // Highlight active filter selects
+  // Highlight active filter selects with consistent factive class
   ["rv-cat","rv-pay"].forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.style.borderColor=el.value?"var(--teal2)":"";
+    if(el) el.classList.toggle("factive", !!(el.value));
   });
 }
 </script>
