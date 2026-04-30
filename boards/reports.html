@@ -71,15 +71,25 @@ function anyRepFilterActive() {
 }
 
 function render() {
-  _allReps = genReps();
-  window._repYst = R(22, 48);
+  const days = slicerDays();
+  _allReps = Array.from({length: Math.round(R(28,52)*days)}, (_,i) => {
+    const isPend = i < Math.round(R(3,9)*days);
+    const tat = parseFloat((isPend ? (1.0+Math.random()*4.5) : (1.2+Math.random()*2.8)).toFixed(1));
+    const status = isPend ? (tat>4?"delayed":"pending") : "delivered";
+    return {
+      id:`SD-${R(10000,99999)}`, name:NAMES[i%NAMES.length], age:R(18,72), gender:R(0,1)?"M":"F",
+      test:TESTS[R(0,TESTS.length-1)], doctor:DOCS[R(0,DOCS.length-1)],
+      collected:`${R(7,16)}:${String(R(0,59)).padStart(2,"0")}`, tat, status, abn:R(0,4)===0
+    };
+  });
+  window._repYst = Math.round(R(22,48)*days);
 
   const el = document.getElementById("bm");
   el.innerHTML = `
   <div class="bh">
     <div>
       <div class="bht">Reports Board</div>
-      <div class="bhs">TAT tracking · Pathologist queue · Abnormal alerts</div>
+      <div class="bhs">TAT tracking · Pathologist queue · Abnormal alerts · <strong style="color:var(--teal)">${slicerLabel()}</strong></div>
     </div>
     <div class="bhr"><span class="hbg hbd">Demo</span><span class="htm" id="htime"></span></div>
   </div>
@@ -102,6 +112,8 @@ function render() {
     </select>
     <div class="fsp"></div>
     <button class="clr-btn" onclick="clearRepFilters()">Clear filters</button>
+    <div class="fsp"></div>
+    ${buildSlicer("rp","render")}
   </div>
 
   <div id="rp-cband" class="cband"></div>
@@ -146,10 +158,11 @@ function render() {
   </div>`;
 
   // Charts use full unfiltered data
-  const tatByDay = [3.8,4.1,3.6,3.9,3.7,4.2, parseFloat((_allReps.reduce((a,r)=>a+r.tat,0)/_allReps.length).toFixed(1))];
-  lineChart("c-tat", ["Mon","Tue","Wed","Thu","Fri","Sat","Today"], [
+  const tatLabels = slicerChartLabels();
+  const tatByDay = tatLabels.map((_,i) => i===tatLabels.length-1 ? parseFloat((_allReps.reduce((a,r)=>a+r.tat,0)/_allReps.length).toFixed(1)) : parseFloat((3.5+Math.random()*1.0).toFixed(1)));
+  lineChart("c-tat", tatLabels, [
     {label:"Avg TAT", data:tatByDay, borderColor:"#0A5548", backgroundColor:"rgba(10,85,72,.08)", fill:true},
-    {label:"4h target", data:[4,4,4,4,4,4,4], borderColor:"#E24B4A", borderWidth:1.5, borderDash:[4,4], pointRadius:0}
+    {label:"4h target", data:tatLabels.map(()=>4), borderColor:"#E24B4A", borderWidth:1.5, borderDash:[4,4], pointRadius:0}
   ], {yMin:0, yMax:6, yFmt:v=>v+"h"});
 
   const tatByTest = TESTS.slice(0,7).map(t=>({name:t, tat:(1.8+Math.random()*2.5).toFixed(1)})).sort((a,b)=>b.tat-a.tat);

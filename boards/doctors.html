@@ -26,7 +26,6 @@
 </div>
 <script>
 window._boardId = "doctors";
-let _dp = "week";
 let _allDocs = [];
 let _dfilt = { s:"", sp:"", tr:"" };
 
@@ -61,14 +60,15 @@ function anyDocFilterActive() {
 
 function render() {
   const el = document.getElementById("bm");
-  const mult = _dp === "week" ? 1 : 4.3;
+  const days = slicerDays();
+  const pLabel = slicerLabel();
+  const mult = days / 7;
 
   _allDocs = DOCTOR_LIST.map(d => {
     const refs = Math.round(d.base * mult * (0.8 + Math.random() * 0.4));
     const prev = Math.round(d.base * mult * (0.7 + Math.random() * 0.5));
     return { ...d, refs, prev, revenue: refs * R(380, 560), delta: parseFloat(pct(refs, prev)) };
   });
-  const pLabel = _dp === "week" ? "This week" : "This month";
   const specs = [...new Set(DOCTOR_LIST.map(d => d.spec))];
 
   el.innerHTML = `
@@ -78,10 +78,6 @@ function render() {
       <div class="bhs">Referral tracking · Weekly trends · Visit priority alerts</div>
     </div>
     <div class="bhr">
-      <div class="ptog">
-        <button class="ptb ${_dp==="week"?"on":""}" onclick="_dp='week';render()">Week</button>
-        <button class="ptb ${_dp==="month"?"on":""}" onclick="_dp='month';render()">Month</button>
-      </div>
       <span class="htm" id="htime"></span>
     </div>
   </div>
@@ -100,6 +96,8 @@ function render() {
     </select>
     <div class="fsp"></div>
     <button class="clr-btn" onclick="clearDocFilters()">Clear filters</button>
+    <div class="fsp"></div>
+    ${buildSlicer("dc","render")}
   </div>
 
   <div id="d-cband" class="cband"></div>
@@ -169,7 +167,7 @@ function renderDocDynamic(docs) {
   const active     = docs.filter(d=>d.refs>0);
   const atRisk     = docs.filter(d=>d.trend==="down");
   const growing    = docs.filter(d=>d.trend==="up");
-  const pLabel     = _dp==="week" ? "this week" : "this month";
+  const pLabel     = slicerLabel().toLowerCase();
 
   const avgRefs   = active.length>0 ? Math.round(total/active.length) : 0;
   const topDoc    = docs.length>0 ? docs.reduce((a,b)=>a.refs>b.refs?a:b) : null;

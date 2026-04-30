@@ -43,8 +43,8 @@ const statuses = ["registered","collected","in_lab","approved","delivered"];
 
 document.addEventListener("DOMContentLoaded", () => { initBoard(); });
 function initBoard() {
-  render(document.getElementById("bm"));
-  setInterval(() => render(document.getElementById("bm")), 45000);
+  render();
+  setInterval(render, 45000);
 }
 
 function genPts() {
@@ -82,16 +82,18 @@ function anyFilterActive() {
   return !!(Object.values(_filt).some(v => v));
 }
 
-function render(el) {
+function render() {
+  const el = document.getElementById("bm");
+  const days = slicerDays();
   _allPts = genPts();
-  const yst = R(30,58);
+  const yst = Math.round(R(30,58) * days);
   window._yst = yst;
 
   el.innerHTML = `
   <div class="bh">
     <div>
       <div class="bht">Patient Board</div>
-      <div class="bhs">Live queue · ${new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})}</div>
+      <div class="bhs">Live queue · ${new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})} · <strong style="color:var(--teal)">${slicerLabel()}</strong></div>
     </div>
     <div class="bhr"><span class="hbg hbd">Demo</span><span class="htm" id="htime"></span></div>
   </div>
@@ -116,6 +118,8 @@ function render(el) {
     </select>
     <div class="fsp"></div>
     <button class="clr-btn" onclick="clearFilters()">Clear filters</button>
+    <div class="fsp"></div>
+    ${buildSlicer("pt","render")}
   </div>
 
   <div id="p-cband" class="cband"></div>
@@ -178,9 +182,11 @@ function render(el) {
 
 function renderDynamic(pts) {
   const yst      = window._yst || 45;
+  const days     = slicerDays();
   const byS      = s => pts.filter(p => p.status === s);
   const total    = pts.length;
   const allTotal = _allPts.length;
+  const periodTotal = Math.round(allTotal * days);
   const isFiltered = anyFilterActive();
 
   const delivered  = byS("delivered").length;
@@ -222,13 +228,13 @@ function renderDynamic(pts) {
 
   // Context band
   document.getElementById("p-cband").innerHTML = `
-    <span><strong>${total}</strong>${isFiltered?` of ${allTotal}`:""} patients</span>
+    <span><strong>${days>1?periodTotal:total}</strong>${isFiltered&&days===1?` of ${allTotal}`:""} patients · <strong style="color:var(--teal)">${slicerLabel()}</strong></span>
     <span class="ctx-sep">·</span>
-    <span>${dp>0?"↑":"↓"}<strong>${Math.abs(dp)}%</strong> vs yesterday (${yst})</span>
+    <span>${dp>0?"↑":"↓"}<strong>${Math.abs(dp)}%</strong> vs previous period</span>
     <span class="ctx-sep">·</span>
     <span>Target <strong>${tgtPct}%</strong> of ${TARGET}/day</span>
     <span class="ctx-sep">·</span>
-    <span>Collected <strong>${fK(isFiltered?totalAmt:allAmt)}</strong>${isFiltered?" (filtered)":""} · avg <strong>${f(avgTicket)}</strong></span>
+    <span>Collected <strong>${fK(isFiltered?totalAmt:allAmt)}</strong>${days>1?" (today)":""}${isFiltered?" filtered":""} · avg <strong>${f(avgTicket)}</strong></span>
     <span class="ctx-sep">·</span>
     <span><strong>${delivered}</strong> delivered · <strong>${inQueue}</strong> in queue · avg wait <strong>${globalAvgWait}m</strong></span>
     ${tatBreach.length>0?`<span class="ctx-sep">·</span><span style="color:var(--red);font-weight:600">⚠ ${tatBreach.length} TAT breached</span>`:""}
@@ -236,7 +242,7 @@ function renderDynamic(pts) {
 
   // KPI row 1 — flow, TAT, delivery, abnormals
   document.getElementById("p-kpi1").innerHTML =
-    kpi("Patients today", allTotal,
+    kpi(days>1?`Patients (${slicerLabel().toLowerCase()})`:"Patients today", days>1?periodTotal:allTotal,
       isFiltered?`showing ${total} filtered · target ${TARGET}/day`:`target ${TARGET}/day · ${tgtPct>=100?"target met":tgtPct+"% complete"}`,
       tgtPct>=100?"up":tgtPct>=75?"ok":"wn",
       tgtPct>=100?"↑ Daily target hit":tgtPct>=75?"→ On track":"↓ Below target","tl",

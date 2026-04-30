@@ -231,3 +231,66 @@ document.addEventListener("DOMContentLoaded", () => {
     startClock();
   }
 });
+
+// ── Date Slicer ───────────────────────────────────────────────
+const DSLICE = { preset: "today", from: today(), to: today() };
+
+function _sliceRange(preset) {
+  const n = new Date(), iso = d => d.toISOString().split("T")[0];
+  let fr = new Date(n), to = new Date(n);
+  if (preset === "yesterday")      { fr.setDate(fr.getDate()-1); to.setDate(to.getDate()-1); }
+  else if (preset === "7d")        { fr.setDate(fr.getDate()-6); }
+  else if (preset === "30d")       { fr.setDate(fr.getDate()-29); }
+  else if (preset === "month")     { fr.setDate(1); }
+  else if (preset === "lastmonth") { fr = new Date(n.getFullYear(), n.getMonth()-1, 1); to = new Date(n.getFullYear(), n.getMonth(), 0); }
+  return { from: iso(fr), to: iso(to) };
+}
+
+function slicerDays() {
+  if (!DSLICE.from || !DSLICE.to) return 1;
+  return Math.max(1, Math.round((new Date(DSLICE.to) - new Date(DSLICE.from)) / 86400000) + 1);
+}
+
+function slicerLabel() {
+  const m = { today:"Today", yesterday:"Yesterday", "7d":"Last 7 days", "30d":"Last 30 days",
+    month:"This month", lastmonth:"Last month" };
+  return DSLICE.preset === "custom"
+    ? (DSLICE.from === DSLICE.to ? DSLICE.from : `${DSLICE.from} – ${DSLICE.to}`)
+    : (m[DSLICE.preset] || "Today");
+}
+
+function slicerChartLabels() {
+  const d = slicerDays();
+  if (d === 1)  return ["7","8","9","10","11","12","13","14","15","16","17","18","19","20"];
+  if (d <= 7)   return ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].slice(0, d);
+  if (d <= 31)  return Array.from({length:d}, (_,i) => String(i+1));
+  return Array.from({length:Math.min(Math.ceil(d/7), 12)}, (_,i) => `W${i+1}`);
+}
+
+function buildSlicer(pfx, cb) {
+  const P = [
+    {k:"today",l:"Today"},{k:"yesterday",l:"Yesterday"},{k:"7d",l:"Last 7d"},
+    {k:"30d",l:"Last 30d"},{k:"month",l:"This month"},{k:"lastmonth",l:"Last month"},{k:"custom",l:"Custom"}
+  ];
+  const btns = P.map(p =>
+    `<button class="dsb${DSLICE.preset===p.k?" on":""}" onclick="setSlice('${p.k}','${pfx}','${cb}')">${p.l}</button>`
+  ).join("");
+  const datePart = DSLICE.preset === "custom"
+    ? `<div class="drange"><input type="date" id="${pfx}-dfrom" value="${DSLICE.from}" max="${today()}" onchange="setSliceCustom('${pfx}','${cb}')"><span class="drsep">→</span><input type="date" id="${pfx}-dto" value="${DSLICE.to}" max="${today()}" onchange="setSliceCustom('${pfx}','${cb}')"></div>`
+    : `<span class="drange-lbl">${DSLICE.from === DSLICE.to ? DSLICE.from : `${DSLICE.from} – ${DSLICE.to}`}</span>`;
+  return `<div class="dslice">${btns}</div>${datePart}`;
+}
+
+function setSlice(preset, pfx, cb) {
+  DSLICE.preset = preset;
+  if (preset !== "custom") { const r = _sliceRange(preset); DSLICE.from = r.from; DSLICE.to = r.to; }
+  else if (!DSLICE.from)   { DSLICE.from = today(); DSLICE.to = today(); }
+  if (window[cb]) window[cb]();
+}
+
+function setSliceCustom(pfx, cb) {
+  DSLICE.from = document.getElementById(pfx+"-dfrom")?.value || today();
+  DSLICE.to   = document.getElementById(pfx+"-dto")?.value   || today();
+  if (DSLICE.from > DSLICE.to) DSLICE.to = DSLICE.from;
+  if (window[cb]) window[cb]();
+}

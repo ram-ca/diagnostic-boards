@@ -29,7 +29,7 @@
 </div>
 <script>
 window._boardId="revenue";
-let _p="today", _catFilter="", _payFilter="";
+let _catFilter="", _payFilter="";
 
 const CAT_MAP={
   "Haematology":["CBC","ESR","Platelet Count"],
@@ -53,11 +53,15 @@ function render(){
   const COSTS={Salaries:115000,Rent:40000,EMI:38000,Electricity:18000,Marketing:25000,Tech:5299};
   const totalFixed=Object.values(COSTS).reduce((a,b)=>a+b,0);
 
-  const base=_p==="today"?R(22000,40000):_p==="week"?R(160000,250000):R(550000,740000);
-  const prev=_p==="today"?R(18000,36000):_p==="week"?R(140000,220000):R(510000,700000);
+  const days=slicerDays();
+  const pLabel=slicerLabel();
+  const isDay=days===1;
+
+  const base=Math.round(R(22000,40000)*days*(0.9+Math.random()*0.2));
+  const prev=Math.round(R(18000,36000)*days*(0.9+Math.random()*0.2));
   const dp=pct(base,prev);
 
-  const patients=_p==="today"?R(38,62):_p==="week"?R(265,430):R(1060,1700);
+  const patients=Math.round(R(38,62)*days*(0.9+Math.random()*0.2));
   const avgTicket=Math.round(base/patients);
 
   const cashPct=R(38,45), upiPct=R(45,52), cardPct=100-cashPct-upiPct;
@@ -65,8 +69,7 @@ function render(){
   const upi=Math.round(base*upiPct/100);
   const card=base-cash-upi;
 
-  const div=_p==="today"?26:_p==="week"?4:1;
-  const fixedShare=Math.round(totalFixed/div);
+  const fixedShare=Math.round(totalFixed*days/26);
   const variable=Math.round(base*0.25);
   const profit=base-variable-fixedShare;
   const margin=Math.round(profit/base*100);
@@ -76,15 +79,11 @@ function render(){
   const tgtPct=Math.round(monthSoFar/MONTHLY_TARGET*100);
   const daysLeft=Math.max(1,30-new Date().getDate());
   const needed=Math.max(0,(MONTHLY_TARGET-monthSoFar)/daysLeft);
-  const runRate=_p==="today"?base:Math.round(base/(_p==="week"?7:new Date().getDate()));
+  const runRate=Math.round(base/days);
   const runRatePct=Math.round(runRate/DAILY_TARGET*100);
 
-  const pLabel={today:"Today",week:"This week",month:"This month"}[_p];
-
-  const trendLabels=_p==="today"?["7","8","9","10","11","12","13","14","15","16","17","18","19","20"]:
-    _p==="week"?["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]:
-    Array.from({length:new Date().getDate()},(_,i)=>`${i+1}`);
-  const trendData=trendLabels.map(()=>_p==="today"?R(600,4800):_p==="week"?R(18000,45000):R(18000,38000));
+  const trendLabels=slicerChartLabels();
+  const trendData=trendLabels.map(()=>isDay?R(600,4800):days<=7?R(18000,45000):R(18000,38000));
   const prevTrend=trendData.map(v=>Math.max(0,v+R(-5000,5000)));
 
   const testRevenue=[
@@ -115,11 +114,6 @@ function render(){
       <div class="bhs">Collections · P&L · Run rate · Cost structure</div>
     </div>
     <div class="bhr">
-      <div class="ptog">
-        <button class="ptb ${_p==="today"?"on":""}" onclick="_p='today';render()">Today</button>
-        <button class="ptb ${_p==="week"?"on":""}" onclick="_p='week';render()">This week</button>
-        <button class="ptb ${_p==="month"?"on":""}" onclick="_p='month';render()">This month</button>
-      </div>
       <span class="htm" id="htime"></span>
     </div>
   </div>
@@ -139,7 +133,7 @@ function render(){
       <option value="digital">Digital only</option>
     </select>
     <div class="fsp"></div>
-    ${_p==="today"?`<input type="date" value="${today()}" readonly style="cursor:default">`:`<span style="font-size:11px;color:var(--ink3)">${pLabel}</span>`}
+    ${buildSlicer("rv","render")}
   </div>
 
   <div class="cband" id="rv-cband">
@@ -199,12 +193,12 @@ function render(){
         <div class="fr"><span style="font-weight:500">Gross revenue</span><span class="fv ft">${fK(base)}</span></div>
         <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Reagents &amp; consumables (25%)</span><span class="fv fn">−${fK(variable)}</span></div>
         <div class="fr" style="border-top:0.5px dashed var(--brd);margin-top:4px;padding-top:8px"><span style="color:var(--ink3)">Gross contribution</span><span class="fv" style="color:var(--teal)">${fK(base-variable)}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Salaries</span><span class="fv fn">−${fK(Math.round(115000/div))}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Rent</span><span class="fv fn">−${fK(Math.round(40000/div))}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− EMI</span><span class="fv fn">−${fK(Math.round(38000/div))}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Electricity</span><span class="fv fn">−${fK(Math.round(18000/div))}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Marketing</span><span class="fv fn">−${fK(Math.round(25000/div))}</span></div>
-        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Tech</span><span class="fv fn">−${fK(Math.round(5299/div))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Salaries</span><span class="fv fn">−${fK(Math.round(115000*days/26))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Rent</span><span class="fv fn">−${fK(Math.round(40000*days/26))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− EMI</span><span class="fv fn">−${fK(Math.round(38000*days/26))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Electricity</span><span class="fv fn">−${fK(Math.round(18000*days/26))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Marketing</span><span class="fv fn">−${fK(Math.round(25000*days/26))}</span></div>
+        <div class="fr"><span style="color:var(--ink3);padding-left:10px">− Tech</span><span class="fv fn">−${fK(Math.round(5299*days/26))}</span></div>
         <div class="fr total"><span style="font-weight:600">Net profit</span><span class="fv" style="color:${profit>0?"var(--grn)":"var(--red)"};font-size:15px">${profit>=0?"+":""}${fK(profit)}</span></div>
         <div class="fr" style="border-top:none"><span style="color:var(--ink3)">Profit margin</span><span class="fv" style="color:${margin>20?"var(--grn)":margin>10?"var(--amb)":"var(--red)"}">${margin}%</span></div>
         <div class="fr"><span style="color:var(--ink3)">Break-even revenue</span><span class="fv">${fK(Math.round(fixedShare/0.75))}</span></div>

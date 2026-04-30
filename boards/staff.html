@@ -62,15 +62,16 @@ function render() {
   }));
 
   const el = document.getElementById("bm");
+  const days = slicerDays();
   const totalSal = _allStaff.reduce((a,s)=>a+s.sal, 0);
-  const samples  = R(32,62);
+  const samples  = Math.round(R(32,62) * days);
   const roles = [...new Set(STAFF_BASE.map(s=>s.role))];
 
   el.innerHTML = `
   <div class="bh">
     <div>
       <div class="bht">Staff Board</div>
-      <div class="bhs">Attendance · Workload · Performance · ${new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})}</div>
+      <div class="bhs">Attendance · Workload · Performance · ${new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})} · <strong style="color:var(--teal)">${slicerLabel()}</strong></div>
     </div>
     <div class="bhr"><span class="htm" id="htime"></span></div>
   </div>
@@ -88,6 +89,8 @@ function render() {
     </select>
     <div class="fsp"></div>
     <button class="clr-btn" onclick="clearStaffFilters()">Clear filters</button>
+    <div class="fsp"></div>
+    ${buildSlicer("sf","render")}
   </div>
 
   <div id="sf-cband" class="cband"></div>
@@ -129,8 +132,8 @@ function render() {
   </div>`;
 
   // Charts use full staff data
-  barChart("c-w", ["7h","8","9","10","11","12","1","2","3","4","5","6","7","8"],
-    [5,12,9,7,5,4,3,5,4,3,4,6,7,4]);
+  const wlLabels = days===1 ? ["7h","8","9","10","11","12","1","2","3","4","5","6","7","8"] : slicerChartLabels();
+  barChart("c-w", wlLabels, wlLabels.map(()=>R(3,14)));
   mkChart("c-a","bar",{
     labels: _allStaff.map(s=>s.init),
     datasets: [{
