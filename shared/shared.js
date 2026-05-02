@@ -234,6 +234,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+document.addEventListener("click", e => {
+  if (!e.target.closest(".ms-wrap"))
+    document.querySelectorAll(".ms-panel").forEach(p => p.style.display="none");
+});
+
 // ── Mobile sidebar ─────────────────────────────────────────────
 function initMobileNav() {
   const app = document.getElementById("app");
@@ -267,6 +272,69 @@ function openMobSidebar() {
 function closeMobSidebar() {
   document.querySelector(".sb")?.classList.remove("mob-open");
   document.querySelector(".sb-overlay")?.classList.remove("on");
+}
+
+// ── Multi-select dropdowns ────────────────────────────────────
+const _MS = {};
+
+function _msHTML(id) {
+  const s = _MS[id]; if (!s) return "";
+  const count = s.selected.size;
+  const lbl = count > 0
+    ? `${s.placeholder} <span class="ms-cnt">${count}</span>`
+    : s.placeholder;
+  return `<div class="ms-wrap" id="msw-${id}">
+    <button class="ms-btn${count>0?" factive":""}" onclick="toggleMS('${id}',event)">${lbl}<span class="ms-arr">▾</span></button>
+    <div class="ms-panel" id="msp-${id}" style="display:none">
+      ${s.options.map(o=>`<div class="ms-opt" onclick="toggleMSOpt('${id}','${o.v}')"><span class="ms-chk${s.selected.has(o.v)?" on":""}"></span>${o.l}</div>`).join("")}
+      ${count>0?`<div class="ms-clr" onclick="clearMS('${id}')">Clear all</div>`:""}
+    </div>
+  </div>`;
+}
+
+function buildMultiSelect(id, placeholder, options, cb) {
+  const opts = options.map(o => typeof o === "string" ? {v:o,l:o} : o);
+  if (!_MS[id]) _MS[id] = { selected:new Set(), placeholder, options:opts, cb };
+  else { _MS[id].placeholder=placeholder; _MS[id].options=opts; _MS[id].cb=cb; }
+  return _msHTML(id);
+}
+
+function getMSVals(id) { return [...(_MS[id]?.selected || new Set())]; }
+
+function toggleMS(id, e) {
+  e?.stopPropagation();
+  const panel = document.getElementById("msp-"+id);
+  if (!panel) return;
+  const isOpen = panel.style.display !== "none";
+  document.querySelectorAll(".ms-panel").forEach(p => p.style.display="none");
+  if (!isOpen) panel.style.display = "block";
+}
+
+function toggleMSOpt(id, value) {
+  const s = _MS[id]; if (!s) return;
+  if (s.selected.has(value)) s.selected.delete(value); else s.selected.add(value);
+  const wrap = document.getElementById("msw-"+id);
+  if (wrap) {
+    const wasOpen = document.getElementById("msp-"+id)?.style.display !== "none";
+    wrap.outerHTML = _msHTML(id);
+    if (wasOpen) { const p=document.getElementById("msp-"+id); if(p) p.style.display="block"; }
+  }
+  if (window[s.cb]) window[s.cb]();
+}
+
+function clearMS(id) {
+  const s = _MS[id]; if (!s) return;
+  s.selected.clear();
+  const wrap = document.getElementById("msw-"+id);
+  if (wrap) wrap.outerHTML = _msHTML(id);
+  if (window[s.cb]) window[s.cb]();
+}
+
+function clearMSBatch(ids) {
+  ids.forEach(id => {
+    if (_MS[id]) _MS[id].selected.clear();
+    const w = document.getElementById("msw-"+id); if (w) w.outerHTML = _msHTML(id);
+  });
 }
 
 // ── Date Slicer ───────────────────────────────────────────────

@@ -37,7 +37,7 @@
 <script>
 window._boardId = "patient";
 let _allPts = [];
-let _filt = { s:"", st:"", d:"", src:"", pay:"" };
+let _filt = { s:"", st:[], d:[], src:[], pay:[] };
 const TARGET = 55;
 const statuses = ["registered","collected","in_lab","approved","delivered"];
 
@@ -71,15 +71,15 @@ function getFiltered() {
   return _allPts.filter(p => {
     const q = _filt.s.toLowerCase();
     return (!q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q))
-      && (!_filt.st  || p.status === _filt.st)
-      && (!_filt.d   || p.doctor === _filt.d)
-      && (!_filt.src || p.source === _filt.src)
-      && (!_filt.pay || p.pay === _filt.pay);
+      && (_filt.st.length===0  || _filt.st.includes(p.status))
+      && (_filt.d.length===0   || _filt.d.includes(p.doctor))
+      && (_filt.src.length===0 || _filt.src.includes(p.source))
+      && (_filt.pay.length===0 || _filt.pay.includes(p.pay));
   });
 }
 
 function anyFilterActive() {
-  return !!(Object.values(_filt).some(v => v));
+  return !!(_filt.s || _filt.st.length || _filt.d.length || _filt.src.length || _filt.pay.length);
 }
 
 function render() {
@@ -101,22 +101,10 @@ function render() {
 
   <div class="fb">
     <input type="text" placeholder="Search name or ID…" id="pts-s" oninput="ptf()">
-    <select id="pts-st" onchange="ptf()">
-      <option value="">All statuses</option>
-      ${statuses.map(s=>`<option value="${s}">${s.replace("_"," ")}</option>`).join("")}
-    </select>
-    <select id="pts-d" onchange="ptf()">
-      <option value="">All doctors</option>
-      ${DOCS.map(d=>`<option value="${d}">${d}</option>`).join("")}
-    </select>
-    <select id="pts-src" onchange="ptf()">
-      <option value="">All sources</option>
-      <option>Walk-in</option><option>Referral</option><option>Home</option>
-    </select>
-    <select id="pts-pay" onchange="ptf()">
-      <option value="">All payments</option>
-      <option>UPI</option><option>Cash</option>
-    </select>
+    ${buildMultiSelect("pts-st","Status",statuses.map(s=>({v:s,l:s.replace("_"," ")})),"ptf")}
+    ${buildMultiSelect("pts-d","Doctor",DOCS.map(d=>({v:d,l:d})),"ptf")}
+    ${buildMultiSelect("pts-src","Source",[{v:"Walk-in",l:"Walk-in"},{v:"Referral",l:"Referral"},{v:"Home",l:"Home"}],"ptf")}
+    ${buildMultiSelect("pts-pay","Payment",[{v:"UPI",l:"UPI"},{v:"Cash",l:"Cash"}],"ptf")}
     <div class="fsp"></div>
     <button class="clr-btn" onclick="clearFilters()">Clear filters</button>
     <div class="fsp"></div>
@@ -179,9 +167,8 @@ function render() {
 
   renderDynamic(getFiltered());
 
-  // Restore filter input values after innerHTML rebuild
-  [["pts-s",_filt.s],["pts-st",_filt.st],["pts-d",_filt.d],["pts-src",_filt.src],["pts-pay",_filt.pay]]
-    .forEach(([id,val]) => { if (val) { const e=document.getElementById(id); if(e) e.value=val; } });
+  // Restore text search value after innerHTML rebuild
+  if (_filt.s) { const e=document.getElementById("pts-s"); if(e) { e.value=_filt.s; e.classList.add("factive"); } }
 }
 
 function renderDynamic(pts) {
@@ -385,29 +372,24 @@ function renderDynamic(pts) {
     <span>Avg: <strong>${f(avgTicket)}</strong>/patient</span>
   ` : `<span style="color:var(--ink3)">No patients match the current filters</span>`;
 
-  // Highlight active filter inputs
-  ["pts-s","pts-st","pts-d","pts-src","pts-pay"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.toggle("factive", !!(el.value));
-  });
+  const si=document.getElementById("pts-s");
+  if(si) si.classList.toggle("factive",!!si.value);
 }
 
 function ptf() {
-  _filt.s   = document.getElementById("pts-s")?.value   || "";
-  _filt.st  = document.getElementById("pts-st")?.value  || "";
-  _filt.d   = document.getElementById("pts-d")?.value   || "";
-  _filt.src = document.getElementById("pts-src")?.value || "";
-  _filt.pay = document.getElementById("pts-pay")?.value || "";
+  _filt.s   = document.getElementById("pts-s")?.value || "";
+  _filt.st  = getMSVals("pts-st");
+  _filt.d   = getMSVals("pts-d");
+  _filt.src = getMSVals("pts-src");
+  _filt.pay = getMSVals("pts-pay");
   renderDynamic(getFiltered());
 }
 
 function clearFilters() {
-  _filt = { s:"", st:"", d:"", src:"", pay:"" };
-  ["pts-s","pts-st","pts-d","pts-src","pts-pay"].forEach(id=>{
-    const e=document.getElementById(id);
-    if(e) { e.value=""; e.classList.remove("factive"); }
-  });
-  renderDynamic(getFiltered());
+  _filt.s = "";
+  const si=document.getElementById("pts-s"); if(si){ si.value=""; si.classList.remove("factive"); }
+  clearMSBatch(["pts-st","pts-d","pts-src","pts-pay"]);
+  ptf();
 }
 </script>
 </body>

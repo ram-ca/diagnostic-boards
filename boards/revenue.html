@@ -29,7 +29,7 @@
 </div>
 <script>
 window._boardId="revenue";
-let _catFilter="", _payFilter="";
+let _catFilter=[], _payFilter=[];
 
 const CAT_MAP={
   "Haematology":["CBC","ESR","Platelet Count"],
@@ -42,8 +42,8 @@ const CAT_MAP={
 document.addEventListener("DOMContentLoaded",()=>{ initBoard(); });
 function initBoard(){ render(); setInterval(render,45000); }
 
-function rvCat(v){ _catFilter=v; renderFiltered(); }
-function rvPay(v){ _payFilter=v; renderFiltered(); }
+function rvCat(){ _catFilter=getMSVals("rv-cat"); renderFiltered(); }
+function rvPay(){ _payFilter=getMSVals("rv-pay"); renderFiltered(); }
 
 function render(){
   const el=document.getElementById("bm");
@@ -121,19 +121,10 @@ function render(){
   </div>
 
   <div class="fb">
-    <select id="rv-cat" onchange="rvCat(this.value)">
-      <option value="">All test categories</option>
-      <option value="Haematology">Haematology</option>
-      <option value="Hormone">Hormone</option>
-      <option value="Biochemistry">Biochemistry</option>
-      <option value="Radiology">Radiology</option>
-      <option value="Microbiology">Microbiology</option>
-    </select>
-    <select id="rv-pay" onchange="rvPay(this.value)">
-      <option value="">All payment modes</option>
-      <option value="cash">Cash only</option>
-      <option value="digital">Digital only</option>
-    </select>
+    ${buildMultiSelect("rv-cat","Category",[{v:"Haematology",l:"Haematology"},{v:"Hormone",l:"Hormone"},{v:"Biochemistry",l:"Biochemistry"},{v:"Radiology",l:"Radiology"},{v:"Microbiology",l:"Microbiology"}],"rvCat")}
+    ${buildMultiSelect("rv-pay","Payment",[{v:"cash",l:"Cash only"},{v:"digital",l:"Digital only"}],"rvPay")}
+    <div class="fsp"></div>
+    <button class="clr-btn" onclick="clearRVFilters()">Clear filters</button>
     <div class="fsp"></div>
     ${buildSlicer("rv","render")}
   </div>
@@ -312,10 +303,7 @@ function render(){
     totalTestRev
   };
 
-  // Re-apply active filters and restore select UI state
-  if (_catFilter || _payFilter) renderFiltered();
-  if (_catFilter) { const e=document.getElementById("rv-cat"); if(e) { e.value=_catFilter; e.classList.add("factive"); } }
-  if (_payFilter) { const e=document.getElementById("rv-pay"); if(e) { e.value=_payFilter; e.classList.add("factive"); } }
+  if (_catFilter.length || _payFilter.length) renderFiltered();
 }
 
 function renderFiltered() {
@@ -326,7 +314,7 @@ function renderFiltered() {
   const testsEl  = document.getElementById("rv-tests-panel");
   const testsTag = document.getElementById("rv-tests-tag");
   if (testsEl && testsTag) {
-    const allowedTests = _catFilter ? (CAT_MAP[_catFilter] || []) : null;
+    const allowedTests = _catFilter.length ? _catFilter.flatMap(c => CAT_MAP[c] || []) : null;
     const filtered = allowedTests
       ? d.testRevenue.filter(t => allowedTests.some(a => t.t.toLowerCase().includes(a.toLowerCase())))
       : d.testRevenue;
@@ -334,7 +322,7 @@ function renderFiltered() {
     const catTotal  = filtered.reduce((a,t) => a+t.v, 0);
     const catShare  = d.totalTestRev > 0 ? Math.round(catTotal/d.totalTestRev*100) : 0;
 
-    testsTag.textContent = _catFilter ? _catFilter : "all categories";
+    testsTag.textContent = _catFilter.length ? _catFilter.join(", ") : "all categories";
 
     const header = testsEl.querySelector(".ptl");
     testsEl.innerHTML = "";
@@ -353,9 +341,9 @@ function renderFiltered() {
     }
 
     // Category total row
-    if (_catFilter) {
+    if (_catFilter.length) {
       testsEl.innerHTML += `<div class="cat-total">
-        <span>${_catFilter} total</span>
+        <span>${_catFilter.join(", ")} total</span>
         <strong>${fK(catTotal)} · ${catShare}% of all tests</strong>
       </div>`;
     } else {
@@ -372,53 +360,57 @@ function renderFiltered() {
   const cband   = document.getElementById("rv-cband");
 
   if (kpi2 && payBars) {
-    const cashV    = _payFilter==="digital" ? 0 : d.cash;
-    const digitalV = _payFilter==="cash"    ? 0 : d.upi + d.card;
+    const showCash    = _payFilter.length===0 || _payFilter.includes("cash");
+    const showDigital = _payFilter.length===0 || _payFilter.includes("digital");
+    const cashV    = showCash    ? d.cash          : 0;
+    const digitalV = showDigital ? d.upi + d.card  : 0;
     const totalV   = cashV + digitalV;
     const cPct = totalV>0 ? Math.round(cashV/totalV*100)    : 0;
     const dPct = totalV>0 ? Math.round(digitalV/totalV*100) : 0;
 
-    if (payTag) payTag.textContent = _payFilter==="cash"?"Cash only":_payFilter==="digital"?"Digital only":d.pLabel.toLowerCase();
+    if (payTag) payTag.textContent = _payFilter.length===1
+      ? (_payFilter[0]==="cash" ? "Cash only" : "Digital only")
+      : d.pLabel.toLowerCase();
 
-    // Update KPI row 2 — values + subtitles for cash/digital cards
+    // Update KPI row 2
     const cards = kpi2.querySelectorAll(".kc");
     if (cards[0]) {
       cards[0].querySelector(".kv").textContent = fK(cashV);
-      cards[0].querySelector(".ks").textContent = _payFilter
-        ? `${_payFilter==="digital"?"0":"100"}% shown · physical float`
+      cards[0].querySelector(".ks").textContent = _payFilter.length
+        ? `${showCash?"100":"0"}% shown · physical float`
         : `${d.cashPct}% of ${d.pLabel.toLowerCase()} · reconcile daily`;
     }
     if (cards[1]) {
       cards[1].querySelector(".kv").textContent = fK(digitalV);
-      cards[1].querySelector(".ks").textContent = _payFilter
-        ? `${_payFilter==="cash"?"0":"100"}% shown · auto-reconciled`
+      cards[1].querySelector(".ks").textContent = _payFilter.length
+        ? `${showDigital?"100":"0"}% shown · auto-reconciled`
         : `${d.upiPct + d.cardPct}% of ${d.pLabel.toLowerCase()} · auto-reconciled`;
     }
 
     // Update payment bars
     payBars.innerHTML = [
-      {l:"Cash",    v:cashV,    p:cPct, c:"var(--teal)"},
-      {l:"Digital", v:digitalV, p:dPct, c:"var(--g2)"}
-    ].filter(x => !(_payFilter==="digital"&&x.l==="Cash" || _payFilter==="cash"&&x.l==="Digital")).map(x=>`
+      {l:"Cash",    v:cashV,    p:cPct, c:"var(--teal)", show:showCash},
+      {l:"Digital", v:digitalV, p:dPct, c:"var(--g2)",   show:showDigital}
+    ].filter(x=>x.show).map(x=>`
       <div class="pbl">
         <div class="pbl-top"><span>${x.l}</span><span>${fK(x.v)} (${x.p}%)</span></div>
         <div class="prog"><div class="progf" style="width:${x.p}%;background:${x.c}"></div></div>
       </div>`).join("")
       + `<div style="margin-top:8px;font-size:10px;color:var(--ink3)">
-          ${_payFilter?"Payment filter active — showing partial view":"↑ Digital leads · healthy trend"}
+          ${_payFilter.length?"Payment filter active — showing partial view":"↑ Digital leads · healthy trend"}
         </div>`;
 
     // Redraw payment doughnut
     doughnut("c-pay",["Cash","UPI","Card"],
-      [_payFilter==="digital"?0:d.cash, _payFilter==="cash"?0:d.upi, _payFilter==="cash"?0:d.card],
+      [showCash?d.cash:0, showDigital?d.upi:0, showDigital?d.card:0],
       ["#0A5548","#C98420","#185FA5"]);
 
-    // Update context band when payment filter active
+    // Update context band
     if (cband) {
-      const filtAmt = _payFilter==="cash" ? d.cash : _payFilter==="digital" ? d.upi+d.card : d.base;
+      const filtAmt = !showCash ? d.upi+d.card : !showDigital ? d.cash : d.base;
       const filtShare = Math.round(filtAmt/d.base*100);
-      cband.innerHTML = _payFilter ? `
-        <span><strong>${fK(filtAmt)}</strong> ${_payFilter} · ${filtShare}% of ${fK(d.base)} total</span>
+      cband.innerHTML = _payFilter.length ? `
+        <span><strong>${fK(filtAmt)}</strong> ${_payFilter.join("+")} · ${filtShare}% of ${fK(d.base)} total</span>
         <span class="ctx-sep">·</span>
         <span>Avg ticket <strong>${f(d.avgTicket)}</strong></span>
         <span class="ctx-sep">·</span>
@@ -436,12 +428,13 @@ function renderFiltered() {
       `;
     }
   }
+}
 
-  // Highlight active filter selects with consistent factive class
-  ["rv-cat","rv-pay"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.toggle("factive", !!(el.value));
-  });
+function clearRVFilters() {
+  clearMSBatch(["rv-cat","rv-pay"]);
+  _catFilter = [];
+  _payFilter = [];
+  renderFiltered();
 }
 </script>
 </body>

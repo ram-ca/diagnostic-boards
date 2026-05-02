@@ -29,7 +29,7 @@
 <script>
 window._boardId = "staff";
 let _allStaff = [];
-let _sfilt = { st:"", role:"" };
+let _sfilt = { st:[], role:[] };
 
 const STAFF_BASE = [
   {name:"Receptionist",    init:"RC", c:"#E6F1FB", tc:"#185FA5", role:"Front desk",  st:"present", ci:"6:58 AM", att:96, sal:14000},
@@ -45,13 +45,13 @@ function initBoard() { render(); setInterval(render, 60000); }
 
 function getFilteredStaff() {
   return _allStaff.filter(s =>
-    (!_sfilt.st   || s.st === _sfilt.st) &&
-    (!_sfilt.role || s.role === _sfilt.role)
+    (_sfilt.st.length===0   || _sfilt.st.includes(s.st)) &&
+    (_sfilt.role.length===0 || _sfilt.role.includes(s.role))
   );
 }
 
 function anyStaffFilterActive() {
-  return !!(_sfilt.st || _sfilt.role);
+  return _sfilt.st.length > 0 || _sfilt.role.length > 0;
 }
 
 function render() {
@@ -77,16 +77,8 @@ function render() {
   </div>
 
   <div class="fb">
-    <select id="sf-st" onchange="sff()">
-      <option value="">All attendance</option>
-      <option value="present">Present</option>
-      <option value="leave">On leave</option>
-      <option value="absent">Absent</option>
-    </select>
-    <select id="sf-role" onchange="sff()">
-      <option value="">All roles</option>
-      ${roles.map(r=>`<option value="${r}">${r}</option>`).join("")}
-    </select>
+    ${buildMultiSelect("sf-st","Attendance",[{v:"present",l:"Present"},{v:"leave",l:"On leave"},{v:"absent",l:"Absent"}],"sff")}
+    ${buildMultiSelect("sf-role","Role",roles.map(r=>({v:r,l:r})),"sff")}
     <div class="fsp"></div>
     <button class="clr-btn" onclick="clearStaffFilters()">Clear filters</button>
     <div class="fsp"></div>
@@ -148,8 +140,6 @@ function render() {
 
   renderStaffDynamic(getFilteredStaff());
 
-  [["sf-st",_sfilt.st],["sf-role",_sfilt.role]]
-    .forEach(([id,val]) => { if(val) { const e=document.getElementById(id); if(e) e.value=val; } });
 }
 
 function renderStaffDynamic(staff) {
@@ -240,26 +230,17 @@ function renderStaffDynamic(staff) {
       <div class="prog"><div class="progf" style="width:${s.score||0}%;background:${s.score>=90?"#1D9E75":s.score>=80?"var(--teal2)":"var(--g2)"}"></div></div>
     </div>`).join("");
 
-  // Filter highlights
-  ["sf-st","sf-role"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.toggle("factive", !!(el.value));
-  });
 }
 
 function sff() {
-  _sfilt.st   = document.getElementById("sf-st")?.value   || "";
-  _sfilt.role = document.getElementById("sf-role")?.value || "";
+  _sfilt.st   = getMSVals("sf-st");
+  _sfilt.role = getMSVals("sf-role");
   renderStaffDynamic(getFilteredStaff());
 }
 
 function clearStaffFilters() {
-  _sfilt = { st:"", role:"" };
-  ["sf-st","sf-role"].forEach(id=>{
-    const e=document.getElementById(id);
-    if(e) { e.value=""; e.classList.remove("factive"); }
-  });
-  renderStaffDynamic(getFilteredStaff());
+  clearMSBatch(["sf-st","sf-role"]);
+  sff();
 }
 </script>
 </body>

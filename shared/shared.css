@@ -279,6 +279,30 @@ body{background:var(--cream);font-family:'Outfit',sans-serif;color:var(--ink);
   .panel:has(.th) .tr { min-width: 460px; }
 }
 
+/* ── MULTI-SELECT ─────────────────────────────────────────────── */
+.ms-wrap{position:relative;flex-shrink:0;}
+.ms-btn{height:30px;border:0.5px solid var(--brd);border-radius:6px;padding:0 22px 0 9px;
+  font-size:12px;background:var(--cream);color:var(--ink);font-family:'Outfit',sans-serif;
+  outline:none;cursor:pointer;white-space:nowrap;position:relative;text-align:left;}
+.ms-btn.factive{border-color:var(--teal2);background:var(--tl);}
+.ms-arr{font-size:8px;position:absolute;right:7px;top:50%;transform:translateY(-50%);color:var(--ink3);pointer-events:none;}
+.ms-cnt{display:inline-flex;align-items:center;justify-content:center;
+  min-width:16px;height:16px;background:var(--teal2);color:#fff;
+  border-radius:8px;font-size:9px;font-weight:600;padding:0 3px;margin-left:2px;vertical-align:middle;}
+.ms-panel{position:absolute;top:calc(100% + 3px);left:0;z-index:300;
+  background:var(--white);border:0.5px solid var(--brd);border-radius:7px;
+  min-width:160px;max-height:220px;overflow-y:auto;
+  box-shadow:0 4px 16px rgba(0,0,0,.10);padding:4px 0;}
+.ms-opt{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:12px;}
+.ms-opt:hover{background:var(--cream);}
+.ms-chk{width:14px;height:14px;border:1.5px solid var(--brd);border-radius:3px;flex-shrink:0;}
+.ms-chk.on{background:var(--teal2);border-color:var(--teal2);
+  background-image:url("data:image/svg+xml,%3Csvg width='10' height='8' viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4l3 3 5-6' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:center;}
+.ms-clr{font-size:10px;color:var(--teal2);padding:5px 12px 3px;
+  border-top:0.5px solid var(--brd);cursor:pointer;margin-top:2px;}
+.ms-clr:hover{color:var(--teal);}
+
 @media (max-width: 480px) {
   .bh  { padding-left: 50px; padding-right: 10px; }
   .bb  { padding: 10px 10px 20px; }

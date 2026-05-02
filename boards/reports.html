@@ -27,7 +27,7 @@
 <script>
 window._boardId = "reports";
 let _allReps = [];
-let _rfilt = { s:"", st:"", test:"", doc:"" };
+let _rfilt = { s:"", st:[], test:[], doc:[] };
 
 document.addEventListener("DOMContentLoaded", () => { initBoard(); });
 function initBoard() { render(); setInterval(render, 45000); }
@@ -55,19 +55,15 @@ function genReps() {
 function getRepFiltered() {
   return _allReps.filter(r => {
     const q = _rfilt.s.toLowerCase();
-    const stMatch = !_rfilt.st
-      || (_rfilt.st === "pending"  && r.status === "pending")
-      || (_rfilt.st === "delayed"  && r.status === "delayed")
-      || (_rfilt.st === "delivered"&& r.status === "delivered");
     return (!q || r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q))
-      && stMatch
-      && (!_rfilt.test || r.test === _rfilt.test)
-      && (!_rfilt.doc  || r.doctor === _rfilt.doc);
+      && (_rfilt.st.length===0   || _rfilt.st.includes(r.status))
+      && (_rfilt.test.length===0 || _rfilt.test.includes(r.test))
+      && (_rfilt.doc.length===0  || _rfilt.doc.includes(r.doctor));
   });
 }
 
 function anyRepFilterActive() {
-  return !!(Object.values(_rfilt).some(v => v));
+  return !!(_rfilt.s || _rfilt.st.length || _rfilt.test.length || _rfilt.doc.length);
 }
 
 function render() {
@@ -96,20 +92,9 @@ function render() {
 
   <div class="fb">
     <input type="text" placeholder="Search patient name or ID…" id="rp-s" oninput="repf()">
-    <select id="rp-st" onchange="repf()">
-      <option value="">All statuses</option>
-      <option value="pending">Pending</option>
-      <option value="delayed">Delayed (&gt;4h)</option>
-      <option value="delivered">Delivered</option>
-    </select>
-    <select id="rp-test" onchange="repf()">
-      <option value="">All tests</option>
-      ${TESTS.map(t=>`<option>${t}</option>`).join("")}
-    </select>
-    <select id="rp-doc" onchange="repf()">
-      <option value="">All doctors</option>
-      ${DOCS.map(d=>`<option>${d}</option>`).join("")}
-    </select>
+    ${buildMultiSelect("rp-st","Status",[{v:"pending",l:"Pending"},{v:"delayed",l:"Delayed (>4h)"},{v:"delivered",l:"Delivered"}],"repf")}
+    ${buildMultiSelect("rp-test","Test",TESTS.map(t=>({v:t,l:t})),"repf")}
+    ${buildMultiSelect("rp-doc","Doctor",DOCS.map(d=>({v:d,l:d})),"repf")}
     <div class="fsp"></div>
     <button class="clr-btn" onclick="clearRepFilters()">Clear filters</button>
     <div class="fsp"></div>
@@ -170,8 +155,6 @@ function render() {
 
   renderRepDynamic(getRepFiltered());
 
-  [["rp-s",_rfilt.s],["rp-st",_rfilt.st],["rp-test",_rfilt.test],["rp-doc",_rfilt.doc]]
-    .forEach(([id,val]) => { if(val) { const e=document.getElementById(id); if(e) e.value=val; } });
 }
 
 function renderRepDynamic(reps) {
@@ -295,28 +278,21 @@ function renderRepDynamic(reps) {
       </div>`).join("")
     : `<div style="padding:14px 0;color:var(--ink3);font-size:12px;text-align:center">No delivered reports match filters</div>`;
 
-  // Filter highlight
-  ["rp-s","rp-st","rp-test","rp-doc"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.toggle("factive", !!(el.value));
-  });
 }
 
 function repf() {
-  _rfilt.s    = document.getElementById("rp-s")?.value    || "";
-  _rfilt.st   = document.getElementById("rp-st")?.value   || "";
-  _rfilt.test = document.getElementById("rp-test")?.value || "";
-  _rfilt.doc  = document.getElementById("rp-doc")?.value  || "";
+  _rfilt.s    = document.getElementById("rp-s")?.value || "";
+  _rfilt.st   = getMSVals("rp-st");
+  _rfilt.test = getMSVals("rp-test");
+  _rfilt.doc  = getMSVals("rp-doc");
   renderRepDynamic(getRepFiltered());
 }
 
 function clearRepFilters() {
-  _rfilt = { s:"", st:"", test:"", doc:"" };
-  ["rp-s","rp-st","rp-test","rp-doc"].forEach(id=>{
-    const e=document.getElementById(id);
-    if(e) { e.value=""; e.classList.remove("factive"); }
-  });
-  renderRepDynamic(getRepFiltered());
+  _rfilt.s = "";
+  const e=document.getElementById("rp-s"); if(e){ e.value=""; e.classList.remove("factive"); }
+  clearMSBatch(["rp-st","rp-test","rp-doc"]);
+  repf();
 }
 </script>
 </body>

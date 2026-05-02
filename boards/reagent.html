@@ -33,7 +33,7 @@
 </div>
 <script>
 window._boardId = "reagent";
-let _rqFilt = { s:"", lv:"" };
+let _rqFilt = { s:"", lv:[] };
 
 const RQS = [
   {name:"CBC reagent pack",  pct:14, days:2,   du:14, cost:420, status:"critical", sup:"Sysmex India",      ph:"040-23456789"},
@@ -58,12 +58,12 @@ function getFilteredRQ() {
   return RQS.filter(r => {
     const s = _rqFilt.s;
     return (!s || r.name.toLowerCase().includes(s) || r.sup.toLowerCase().includes(s))
-      && (!_rqFilt.lv || r.status === _rqFilt.lv);
+      && (_rqFilt.lv.length===0 || _rqFilt.lv.includes(r.status));
   });
 }
 
 function anyRQFilterActive() {
-  return !!(_rqFilt.s || _rqFilt.lv);
+  return !!(_rqFilt.s || _rqFilt.lv.length);
 }
 
 function render() {
@@ -85,12 +85,7 @@ function render() {
 
   <div class="fb">
     <input type="text" placeholder="Search reagent or supplier…" id="rq-s" oninput="rqf()">
-    <select id="rq-l" onchange="rqf()">
-      <option value="">All levels</option>
-      <option value="critical">Critical (&lt;3 days)</option>
-      <option value="low">Low (&lt;7 days)</option>
-      <option value="ok">Healthy (&gt;7 days)</option>
-    </select>
+    ${buildMultiSelect("rq-l","Level",[{v:"critical",l:"Critical (<3 days)"},{v:"low",l:"Low (<7 days)"},{v:"ok",l:"Healthy (>7 days)"}],"rqf")}
     <div class="fsp"></div>
     <button class="clr-btn" onclick="clearRQFilters()">Clear filters</button>
     <span style="font-size:11px;color:var(--ink3)">Monthly spend: <strong>${fK(totalMonthlySpend)}</strong></span>
@@ -140,8 +135,6 @@ function render() {
 
   renderRQDynamic(getFilteredRQ());
 
-  [["rq-s",_rqFilt.s],["rq-l",_rqFilt.lv]]
-    .forEach(([id,val]) => { if(val) { const e=document.getElementById(id); if(e) e.value=val; } });
 }
 
 function renderRQDynamic(items) {
@@ -215,26 +208,19 @@ function renderRQDynamic(items) {
       </div>`).join("")
     : `<div style="padding:14px 0;color:var(--ink3);font-size:12px;text-align:center">No reagents match current filters</div>`;
 
-  // Filter highlights
-  ["rq-s","rq-l"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.toggle("factive", !!(el.value));
-  });
 }
 
 function rqf() {
   _rqFilt.s  = (document.getElementById("rq-s")?.value || "").toLowerCase();
-  _rqFilt.lv = document.getElementById("rq-l")?.value || "";
+  _rqFilt.lv = getMSVals("rq-l");
   renderRQDynamic(getFilteredRQ());
 }
 
 function clearRQFilters() {
-  _rqFilt = { s:"", lv:"" };
-  ["rq-s","rq-l"].forEach(id=>{
-    const e=document.getElementById(id);
-    if(e) { e.value=""; e.classList.remove("factive"); }
-  });
-  renderRQDynamic(getFilteredRQ());
+  _rqFilt.s = "";
+  const e=document.getElementById("rq-s"); if(e){ e.value=""; e.classList.remove("factive"); }
+  clearMSBatch(["rq-l"]);
+  rqf();
 }
 </script>
 </body>

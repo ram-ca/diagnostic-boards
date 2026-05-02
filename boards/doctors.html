@@ -27,7 +27,7 @@
 <script>
 window._boardId = "doctors";
 let _allDocs = [];
-let _dfilt = { s:"", sp:"", tr:"" };
+let _dfilt = { s:"", sp:[], tr:[] };
 
 const DOCTOR_LIST = [
   {name:"Dr Ravi Shankar",  spec:"General Physician", base:18, trend:"up",   wks:[14,16,18,20,22,19,21,24], ph:"+91 98712 34561", init:"RS"},
@@ -49,13 +49,13 @@ function getFilteredDocs() {
   return _allDocs.filter(d => {
     const q = _dfilt.s.toLowerCase();
     return (!q || d.name.toLowerCase().includes(q))
-      && (!_dfilt.sp || d.spec === _dfilt.sp)
-      && (!_dfilt.tr || d.trend === _dfilt.tr);
+      && (_dfilt.sp.length===0 || _dfilt.sp.includes(d.spec))
+      && (_dfilt.tr.length===0 || _dfilt.tr.includes(d.trend));
   });
 }
 
 function anyDocFilterActive() {
-  return !!(_dfilt.s || _dfilt.sp || _dfilt.tr);
+  return !!(_dfilt.s || _dfilt.sp.length || _dfilt.tr.length);
 }
 
 function render() {
@@ -84,16 +84,8 @@ function render() {
 
   <div class="fb">
     <input type="text" placeholder="Search doctor name…" id="d-s" oninput="df()">
-    <select id="d-sp" onchange="df()">
-      <option value="">All specialities</option>
-      ${specs.map(s=>`<option value="${s}">${s}</option>`).join("")}
-    </select>
-    <select id="d-tr" onchange="df()">
-      <option value="">All trends</option>
-      <option value="up">Increasing ↑</option>
-      <option value="flat">Stable →</option>
-      <option value="down">Dropping ↓</option>
-    </select>
+    ${buildMultiSelect("d-sp","Speciality",specs.map(s=>({v:s,l:s})),"df")}
+    ${buildMultiSelect("d-tr","Trend",[{v:"up",l:"Increasing ↑"},{v:"flat",l:"Stable →"},{v:"down",l:"Dropping ↓"}],"df")}
     <div class="fsp"></div>
     <button class="clr-btn" onclick="clearDocFilters()">Clear filters</button>
     <div class="fsp"></div>
@@ -155,8 +147,6 @@ function render() {
 
   renderDocDynamic(getFilteredDocs());
 
-  [["d-s",_dfilt.s],["d-sp",_dfilt.sp],["d-tr",_dfilt.tr]]
-    .forEach(([id,val]) => { if(val) { const e=document.getElementById(id); if(e) e.value=val; } });
 }
 
 function renderDocDynamic(docs) {
@@ -249,27 +239,20 @@ function renderDocDynamic(docs) {
       </div>`).join("")
     : `<div style="padding:14px 0;color:var(--ink3);font-size:12px;text-align:center">No doctors match current filters</div>`;
 
-  // Filter highlights
-  ["d-s","d-sp","d-tr"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.toggle("factive", !!(el.value));
-  });
 }
 
 function df() {
-  _dfilt.s  = document.getElementById("d-s")?.value  || "";
-  _dfilt.sp = document.getElementById("d-sp")?.value || "";
-  _dfilt.tr = document.getElementById("d-tr")?.value || "";
+  _dfilt.s  = document.getElementById("d-s")?.value || "";
+  _dfilt.sp = getMSVals("d-sp");
+  _dfilt.tr = getMSVals("d-tr");
   renderDocDynamic(getFilteredDocs());
 }
 
 function clearDocFilters() {
-  _dfilt = { s:"", sp:"", tr:"" };
-  ["d-s","d-sp","d-tr"].forEach(id=>{
-    const e=document.getElementById(id);
-    if(e) { e.value=""; e.classList.remove("factive"); }
-  });
-  renderDocDynamic(getFilteredDocs());
+  _dfilt.s = "";
+  const e=document.getElementById("d-s"); if(e){ e.value=""; e.classList.remove("factive"); }
+  clearMSBatch(["d-sp","d-tr"]);
+  df();
 }
 </script>
 </body>
