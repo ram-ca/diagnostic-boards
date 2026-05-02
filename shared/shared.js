@@ -69,8 +69,14 @@ function mkChart(id, type, data, opts = {}) {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: opts.legend || { display: false }, tooltip: { callbacks: { label: opts.ttFn || undefined } } },
       scales: opts.noScales ? {} : {
-        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0 } },
-        y: { grid: { color: "rgba(128,128,128,.07)" }, ticks: { font: { size: 10 }, callback: opts.yFmt || undefined }, min: opts.yMin, max: opts.yMax }
+        x: {
+          title: { display: !!opts.xLabel, text: opts.xLabel||"", font:{size:10}, color:"#7A7464" },
+          grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0 }
+        },
+        y: {
+          title: { display: !!opts.yLabel, text: opts.yLabel||"", font:{size:10}, color:"#7A7464" },
+          grid: { color: "rgba(128,128,128,.07)" }, ticks: { font: { size: 10 }, callback: opts.yFmt || undefined }, min: opts.yMin, max: opts.yMax
+        }
       }
     }
   });

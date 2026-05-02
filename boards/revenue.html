@@ -81,6 +81,7 @@ function render(){
   const needed=Math.max(0,(MONTHLY_TARGET-monthSoFar)/daysLeft);
   const runRate=Math.round(base/days);
   const runRatePct=Math.round(runRate/DAILY_TARGET*100);
+  const outstanding=R(1200,6800);
 
   const trendLabels=slicerChartLabels();
   const trendData=trendLabels.map(()=>isDay?R(600,4800):days<=7?R(18000,45000):R(18000,38000));
@@ -114,6 +115,7 @@ function render(){
       <div class="bhs">Collections · P&L · Run rate · Cost structure</div>
     </div>
     <div class="bhr">
+      <span class="hbg hbd">₹${f(outstanding).replace("₹","")} pending</span>
       <span class="htm" id="htime"></span>
     </div>
   </div>
@@ -289,12 +291,19 @@ function render(){
     </div>
   </div>`;
 
-  lineChart("c-rv",trendLabels,[
+  const rvDatasets=[
     {label:pLabel,data:trendData,borderColor:"#0A5548",backgroundColor:"rgba(10,85,72,.08)",fill:true},
     {label:"Previous",data:prevTrend,borderColor:"#D3D1C7",borderDash:[3,3],pointRadius:0}
-  ],{yFmt:v=>v>=100000?"₹"+(v/100000).toFixed(1)+"L":v>=1000?"₹"+(v/1000).toFixed(0)+"K":"₹"+v});
+  ];
+  if(!isDay) rvDatasets.push({label:"Daily target",data:trendLabels.map(()=>DAILY_TARGET),borderColor:"#C98420",borderDash:[5,5],pointRadius:0,borderWidth:1.5});
+  lineChart("c-rv",trendLabels,rvDatasets,{
+    yFmt:v=>v>=100000?"₹"+(v/100000).toFixed(1)+"L":v>=1000?"₹"+(v/1000).toFixed(0)+"K":"₹"+v,
+    yLabel:"Revenue (₹)",
+    xLabel:isDay?"Hour":days<=7?"Day":days<=31?"Date":"Week",
+    legend:{display:true,labels:{font:{size:10},boxWidth:8,padding:6}}
+  });
   doughnut("c-pay",["Cash","UPI","Card"],[cash,upi,card],["#0A5548","#C98420","#185FA5"]);
-  barChart("c-cost",Object.keys(COSTS),Object.values(COSTS),"#C98420",{yFmt:v=>"₹"+(v/1000).toFixed(0)+"K"});
+  barChart("c-cost",Object.keys(COSTS),Object.values(COSTS),"#C98420",{yFmt:v=>"₹"+(v/1000).toFixed(0)+"K",yLabel:"Amount (₹)",xLabel:"Category"});
 
   // Store all computed values for filter updates
   window._rvData = {

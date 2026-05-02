@@ -85,6 +85,7 @@ function anyFilterActive() {
 function render() {
   const el = document.getElementById("bm");
   const days = slicerDays();
+  const isDay = days === 1;
   _allPts = genPts();
   const yst = Math.round(R(30,58) * days);
   window._yst = yst;
@@ -134,7 +135,7 @@ function render() {
 
     <div class="g3" style="margin-bottom:12px">
       <div class="panel">
-        <div class="ptl">Hourly patient flow <span class="ptag">today vs yesterday</span></div>
+        <div class="ptl">${isDay?"Hourly patient flow":"Patient flow"} <span class="ptag">${isDay?"today vs yesterday":slicerLabel().toLowerCase()}</span></div>
         <div class="cw"><canvas id="c-hr"></canvas></div>
       </div>
       <div class="panel" id="p-docpanel">
@@ -165,13 +166,16 @@ function render() {
     </div>
   </div>`;
 
-  // Hourly chart — time-series, uses unfiltered full-day data
-  const hrs = ["7","8","9","10","11","12","13","14","15","16","17","18","19","20"];
-  const hd  = [2,5,8,9,7,6,4,5,7,5,4,5,6,3];
-  lineChart("c-hr", hrs, [
-    {label:"Today",     data:hd,                              borderColor:"#0A5548",backgroundColor:"rgba(10,85,72,.1)",fill:true},
-    {label:"Yesterday", data:hd.map(v=>Math.max(0,v+R(-2,3))),borderColor:"#D3D1C7",borderDash:[3,3],pointRadius:0}
-  ]);
+  // Patient flow chart — hourly for today, period-based for multi-day
+  const hrLabels = isDay ? ["7","8","9","10","11","12","13","14","15","16","17","18","19","20"] : slicerChartLabels();
+  const hrBase   = isDay ? [2,5,8,9,7,6,4,5,7,5,4,5,6,3] : hrLabels.map(()=>Math.round(R(30,58)*days/hrLabels.length));
+  const hrDatasets = [{label:isDay?"Today":slicerLabel(),data:hrBase,borderColor:"#0A5548",backgroundColor:"rgba(10,85,72,.1)",fill:true}];
+  if(isDay) hrDatasets.push({label:"Yesterday",data:hrBase.map(v=>Math.max(0,v+R(-2,3))),borderColor:"#D3D1C7",borderDash:[3,3],pointRadius:0});
+  lineChart("c-hr", hrLabels, hrDatasets, {
+    yLabel:"Patients",
+    xLabel:isDay?"Hour of Day":days<=7?"Day":days<=31?"Date":"Week",
+    legend:{display:true,labels:{font:{size:10},boxWidth:8,padding:6}}
+  });
 
   renderDynamic(getFiltered());
 
@@ -320,7 +324,7 @@ function renderDynamic(pts) {
     const list = byS(h.k), avg = avgWait(h.k);
     return `<div class="scol">
       <div class="shdr ${h.c}"><span>${h.l}</span><span class="scnt">${list.length}</span></div>
-      ${avg>0?`<div style="font-size:9px;color:var(--ink3);padding:3px 8px;border-bottom:0.5px solid var(--brd)">avg wait: ${avg}m</div>`:""}
+      ${avg>0?`<div style="font-size:9px;color:${avg>120?"var(--red)":avg>60?"var(--amb)":"var(--ink3)"};font-weight:${avg>60?"500":"400"};padding:3px 8px;border-bottom:0.5px solid var(--brd)">avg wait: ${avg}m${avg>120?" ⚠":""}</div>`:""}
       <div class="scards">${chips(list)}</div>
     </div>`;
   }).join("");
