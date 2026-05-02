@@ -229,8 +229,44 @@ document.addEventListener("DOMContentLoaded", () => {
     app.style.display = "flex";
     if (window._boardId) buildNav(window._boardId);
     startClock();
+    if (window.innerWidth <= 768) initMobileNav();
   }
 });
+
+// ── Mobile sidebar ─────────────────────────────────────────────
+function initMobileNav() {
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  // Dark overlay — tapping it closes the sidebar
+  const ov = document.createElement("div");
+  ov.className = "sb-overlay";
+  ov.onclick = closeMobSidebar;
+  document.body.appendChild(ov);
+
+  // Hamburger button inside #app (position:absolute keeps it out of flex flow)
+  const btn = document.createElement("button");
+  btn.className = "mob-hbg";
+  btn.setAttribute("aria-label", "Open menu");
+  btn.innerHTML = `<svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+  btn.onclick = openMobSidebar;
+  app.appendChild(btn);
+
+  // Close sidebar when a nav link is tapped
+  document.querySelector(".sb")?.addEventListener("click", e => {
+    if (e.target.closest(".ni")) closeMobSidebar();
+  });
+}
+
+function openMobSidebar() {
+  document.querySelector(".sb")?.classList.add("mob-open");
+  document.querySelector(".sb-overlay")?.classList.add("on");
+}
+
+function closeMobSidebar() {
+  document.querySelector(".sb")?.classList.remove("mob-open");
+  document.querySelector(".sb-overlay")?.classList.remove("on");
+}
 
 // ── Date Slicer ───────────────────────────────────────────────
 const DSLICE = { preset: "today", from: today(), to: today() };

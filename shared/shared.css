@@ -221,3 +221,67 @@ body{background:var(--cream);font-family:'Outfit',sans-serif;color:var(--ink);
 .drange input[type=date]:focus{border-color:var(--teal2);}
 .drsep{font-size:10px;color:var(--ink3);}
 .drange-lbl{font-size:10px;color:var(--ink3);font-family:'DM Mono',monospace;padding:0 4px;white-space:nowrap;}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Sidebar: off-screen drawer */
+  #app { position: relative; }
+  .sb {
+    position: fixed; top: 0; left: -192px; bottom: 0; z-index: 200;
+    transition: left .25s ease; box-shadow: none;
+  }
+  .sb.mob-open { left: 0; box-shadow: 4px 0 24px rgba(0,0,0,.28); }
+
+  /* Overlay behind open sidebar */
+  .sb-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.42); z-index: 199;
+  }
+  .sb-overlay.on { display: block; }
+
+  /* Hamburger button — absolute so it stays out of flex flow */
+  .mob-hbg {
+    position: absolute; top: 10px; left: 12px; z-index: 10;
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    background: var(--white); border: 0.5px solid var(--brd);
+    border-radius: 7px; cursor: pointer;
+  }
+  .mob-hbg svg { width: 15px; height: 15px; }
+
+  /* Push header content right so hamburger doesn't overlap */
+  .bh { padding: 10px 14px 8px 52px; }
+
+  /* Filter bar: single scrollable row */
+  .fb { padding: 7px 14px; flex-wrap: nowrap; overflow-x: auto; }
+  .fb::-webkit-scrollbar { display: none; }
+
+  .cband { padding: 6px 14px; }
+  .bb    { padding: 12px 12px 24px; }
+
+  /* KPI grids: 2 columns */
+  .k3, .k4 { grid-template-columns: repeat(2, 1fr); }
+
+  /* Content grids: single column stack */
+  .g2, .g3, .g31, .g13 { grid-template-columns: 1fr; }
+
+  /* Patient board status columns: 3 */
+  .scols { grid-template-columns: repeat(3, 1fr); }
+
+  /* Charts: shorter on mobile */
+  .cw   { height: 140px; }
+  .cw.t { height: 160px; }
+  .cw.s { height: 100px; }
+
+  /* Table panels: horizontal scroll so rows aren't crushed */
+  .panel:has(.th) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .panel:has(.th) .th,
+  .panel:has(.th) .tr { min-width: 460px; }
+}
+
+@media (max-width: 480px) {
+  .bh  { padding-left: 50px; padding-right: 10px; }
+  .bb  { padding: 10px 10px 20px; }
+  .kv  { font-size: 19px; }
+  .scols { grid-template-columns: repeat(2, 1fr); }
+}
