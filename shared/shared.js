@@ -183,12 +183,7 @@ function buildNav(currentBoardId) {
     visible.map(b => `
       <a class="ni ${b.id === currentBoardId ? "on" : ""}" href="${window._navBase||""}${b.file}">
         ${ICONS[b.icon]}<span class="nib">${b.label}</span>
-      </a>`).join("") +
-    `<div class="nsc" style="margin-top:6px">Account</div>
-     <button class="ni" onclick="logout()">
-       <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M10 2H4a1 1 0 00-1 1v10a1 1 0 001 1h6M13 8H7M13 8l-2-2M13 8l-2 2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
-       <span class="nib">Sign out</span>
-     </button>`;
+      </a>`).join("");
 }
 
 function logout() {
