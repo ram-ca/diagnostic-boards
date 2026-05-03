@@ -155,13 +155,13 @@ function render() {
   </div>`;
 
   // Patient flow chart — hourly for today, period-based for multi-day
-  const hrLabels = isDay ? ["7","8","9","10","11","12","13","14","15","16","17","18","19","20"] : slicerChartLabels();
+  const hrLabels = slicerChartLabels();
   const hrBase   = isDay ? [2,5,8,9,7,6,4,5,7,5,4,5,6,3] : hrLabels.map(()=>Math.round(R(30,58)*days/hrLabels.length));
   const hrDatasets = [{label:isDay?"Today":slicerLabel(),data:hrBase,borderColor:"#0A5548",backgroundColor:"rgba(10,85,72,.1)",fill:true}];
   if(isDay) hrDatasets.push({label:"Yesterday",data:hrBase.map(v=>Math.max(0,v+R(-2,3))),borderColor:"#D3D1C7",borderDash:[3,3],pointRadius:0});
   lineChart("c-hr", hrLabels, hrDatasets, {
     yLabel:"Patients",
-    xLabel:isDay?"Hour of Day":days<=7?"Day":days<=31?"Date":"Week",
+    xLabel:isDay?"Time of Day":days<=7?"Day":days<=31?"Date":"Week",
     legend:{display:true,labels:{font:{size:10},boxWidth:8,padding:6}}
   });
 

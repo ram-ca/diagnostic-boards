@@ -290,7 +290,7 @@ function render(){
   lineChart("c-rv",trendLabels,rvDatasets,{
     yFmt:v=>v>=100000?"₹"+(v/100000).toFixed(1)+"L":v>=1000?"₹"+(v/1000).toFixed(0)+"K":"₹"+v,
     yLabel:"Revenue (₹)",
-    xLabel:isDay?"Hour":days<=7?"Day":days<=31?"Date":"Week",
+    xLabel:isDay?"Time of Day":days<=7?"Day":days<=31?"Date":"Week",
     legend:{display:true,labels:{font:{size:10},boxWidth:8,padding:6}}
   });
   doughnut("c-pay",["Cash","UPI","Card"],[cash,upi,card],["#0A5548","#C98420","#185FA5"]);

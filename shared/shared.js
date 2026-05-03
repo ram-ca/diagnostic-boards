@@ -366,7 +366,7 @@ function slicerLabel() {
 
 function slicerChartLabels() {
   const d = slicerDays();
-  if (d === 1)  return ["7","8","9","10","11","12","13","14","15","16","17","18","19","20"];
+  if (d === 1)  return ["7 AM","8 AM","9 AM","10 AM","11 AM","12 PM","1 PM","2 PM","3 PM","4 PM","5 PM","6 PM","7 PM","8 PM"];
   if (d <= 7)   return ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].slice(0, d);
   if (d <= 31)  return Array.from({length:d}, (_,i) => String(i+1));
   return Array.from({length:Math.min(Math.ceil(d/7), 12)}, (_,i) => `W${i+1}`);
