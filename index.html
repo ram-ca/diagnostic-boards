@@ -30,9 +30,63 @@ main{flex:1;padding:48px;}
 footer{padding:24px 48px;border-top:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;}
 .f-note{font-size:11px;color:var(--ink3);}
 .f-mode{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);background:var(--cream);border:0.5px solid var(--brd);border-radius:4px;padding:3px 8px;}
+
+/* ── PIN OVERLAY ── */
+#pin-overlay{position:fixed;inset:0;background:var(--ink);z-index:999;display:flex;align-items:center;justify-content:center;}
+.pin-box{text-align:center;width:320px;}
+.pin-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:32px;}
+.pin-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:#fff;letter-spacing:.08em;}
+.pin-sub{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:2px;}
+.pin-label{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:12px;letter-spacing:.06em;}
+.pin-dots{display:flex;justify-content:center;gap:10px;margin-bottom:24px;}
+.pin-dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.15);transition:background .2s;}
+.pin-dot.filled{background:#1D9E75;}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pin-btn{background:rgba(255,255,255,.07);border:0.5px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-family:'Outfit',sans-serif;font-size:20px;font-weight:300;padding:16px;cursor:pointer;transition:background .15s;}
+.pin-btn:hover{background:rgba(255,255,255,.13);}
+.pin-btn:active{background:rgba(255,255,255,.2);}
+.pin-btn.del{font-size:16px;color:rgba(255,255,255,.4);}
+.pin-err{font-size:11px;color:#E24B4A;margin-top:14px;min-height:16px;letter-spacing:.04em;}
 </style>
 </head>
 <body>
+
+<div id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-logo">
+      <svg width="30" height="30" viewBox="0 0 72 72" fill="none">
+        <circle cx="36" cy="36" r="33" stroke="rgba(255,255,255,.2)" stroke-width=".7" fill="none"/>
+        <path d="M 44,24 A 8,8 0 0,0 28,24 C 28,36 44,36 44,48 A 8,8 0 0,1 28,48" stroke="white" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <circle cx="44" cy="24" r="2.6" fill="#C98420"/>
+        <circle cx="28" cy="48" r="2.6" fill="#C98420"/>
+      </svg>
+      <div><div class="pin-name">Sharada Diagnostics</div><div class="pin-sub">Operations Boards</div></div>
+    </div>
+    <div class="pin-label">Enter PIN to continue</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinKey('1')">1</button>
+      <button class="pin-btn" onclick="pinKey('2')">2</button>
+      <button class="pin-btn" onclick="pinKey('3')">3</button>
+      <button class="pin-btn" onclick="pinKey('4')">4</button>
+      <button class="pin-btn" onclick="pinKey('5')">5</button>
+      <button class="pin-btn" onclick="pinKey('6')">6</button>
+      <button class="pin-btn" onclick="pinKey('7')">7</button>
+      <button class="pin-btn" onclick="pinKey('8')">8</button>
+      <button class="pin-btn" onclick="pinKey('9')">9</button>
+      <button class="pin-btn" onclick="pinKey('')"></button>
+      <button class="pin-btn" onclick="pinKey('0')">0</button>
+      <button class="pin-btn del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
 <header>
   <div class="h-logo">
     <svg width="36" height="36" viewBox="0 0 72 72" fill="none">
@@ -115,6 +169,53 @@ footer{padding:24px 48px;border-top:1px solid var(--brd);display:flex;align-item
 </footer>
 
 <script>
+// ── PIN ─────────────────────────────────────────────────────
+const BOARD_PIN = "9999"; // ← change this to your PIN
+let _pin = "";
+
+(function checkAuth() {
+  if (sessionStorage.getItem("sd_auth") === "1") {
+    document.getElementById("pin-overlay").style.display = "none";
+  }
+})();
+
+function pinKey(n) {
+  if (!n || _pin.length >= 4) return;
+  _pin += n;
+  updateDots();
+  if (_pin.length === 4) setTimeout(checkPin, 150);
+}
+
+function pinDel() {
+  _pin = _pin.slice(0, -1);
+  document.getElementById("pin-err").textContent = "";
+  updateDots();
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById("d" + i).classList.toggle("filled", i < _pin.length);
+  }
+}
+
+function checkPin() {
+  if (_pin === BOARD_PIN) {
+    sessionStorage.setItem("sd_auth", "1");
+    document.getElementById("pin-overlay").style.display = "none";
+  } else {
+    document.getElementById("pin-err").textContent = "Incorrect PIN. Try again.";
+    _pin = "";
+    updateDots();
+  }
+}
+
+document.addEventListener("keydown", e => {
+  if (document.getElementById("pin-overlay").style.display === "none") return;
+  if (e.key >= "0" && e.key <= "9") pinKey(e.key);
+  if (e.key === "Backspace") pinDel();
+});
+
+// ── Clock ────────────────────────────────────────────────────
 setInterval(()=>{
   const t=new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
   document.getElementById("clk").textContent=t;
